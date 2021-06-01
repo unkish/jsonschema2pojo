@@ -16,8 +16,6 @@
 
 package org.jsonschema2pojo;
 
-import static org.apache.commons.lang3.StringUtils.*;
-
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -46,11 +44,13 @@ import com.sun.codemodel.JEnumConstant;
 import com.sun.codemodel.JFieldVar;
 import com.sun.codemodel.JMethod;
 
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+
 /**
  * Annotates generated Java types using the Jackson 2.x mapping annotations.
  *
  * @see <a
- *      href="https://github.com/FasterXML/jackson-annotations">https://github.com/FasterXML/jackson-annotations</a>
+ * href="https://github.com/FasterXML/jackson-annotations">https://github.com/FasterXML/jackson-annotations</a>
  */
 public class Jackson2Annotator extends AbstractTypeInfoAwareAnnotator {
 
@@ -100,6 +100,10 @@ public class Jackson2Annotator extends AbstractTypeInfoAwareAnnotator {
 
     @Override
     public void propertyField(JFieldVar field, JDefinedClass clazz, String propertyName, JsonNode propertyNode) {
+        String exampleValue = propertyNode.get("example").textValue();
+        System.out.println("field: " + propertyName + ", type: " + propertyNode.get("type") + ", example value: " + exampleValue);
+        field.annotate(SuppressWarnings.class).param("value", exampleValue);
+
         field.annotate(JsonProperty.class).param("value", propertyName);
         if (field.type().erasure().equals(field.type().owner().ref(Set.class))) {
             field.annotate(JsonDeserialize.class).param("as", LinkedHashSet.class);
@@ -217,6 +221,7 @@ public class Jackson2Annotator extends AbstractTypeInfoAwareAnnotator {
         }
     }
 
+    @Override
     protected void addJsonTypeInfoAnnotation(JDefinedClass jclass, String propertyName) {
         JAnnotationUse jsonTypeInfo = jclass.annotate(JsonTypeInfo.class);
         jsonTypeInfo.param("use", JsonTypeInfo.Id.CLASS);

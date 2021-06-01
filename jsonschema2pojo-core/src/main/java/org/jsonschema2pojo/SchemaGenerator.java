@@ -18,6 +18,8 @@ package org.jsonschema2pojo;
 
 import java.io.IOException;
 import java.net.URL;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Iterator;
 
 import org.jsonschema2pojo.exception.GenerationException;
@@ -81,7 +83,9 @@ public class SchemaGenerator {
         ObjectNode properties = this.objectMapper.createObjectNode();
         for (Iterator<String> iter = exampleObject.fieldNames(); iter.hasNext();) {
             String property = iter.next();
-            properties.set(property, schemaFromExample(exampleObject.get(property)));
+            ObjectNode schemaFromExample = schemaFromExample(exampleObject.get(property));
+            schemaFromExample.put("example", exampleObject.get(property).asText());
+            properties.set(property, schemaFromExample);
         }
         schema.set("properties", properties);
 
@@ -166,7 +170,17 @@ public class SchemaGenerator {
             } else {
                 Class<? extends Object> javaTypeForValue = valueAsJavaType.getClass();
                 SchemaAware valueSerializer = (SchemaAware) serializerProvider.findValueSerializer(javaTypeForValue, null);
-                return (ObjectNode) valueSerializer.getSchema(serializerProvider, null);
+                ObjectNode schema = (ObjectNode) valueSerializer.getSchema(serializerProvider, null);
+                if (String.class.equals(javaTypeForValue)) {
+                    try {
+                        DateTimeFormatter.ISO_DATE_TIME.parse(exampleValue.asText());
+                        schema.put("format", "date-time");
+                    } catch (DateTimeParseException e) {
+                        // Ignore
+                    }
+                }
+                return schema;
+
             }
         } catch (JsonProcessingException e) {
             throw new GenerationException("Unable to generate a schema for this json example: " + exampleValue, e);
