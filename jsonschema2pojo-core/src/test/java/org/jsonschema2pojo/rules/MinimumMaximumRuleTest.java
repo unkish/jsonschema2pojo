@@ -16,57 +16,50 @@
 
 package org.jsonschema2pojo.rules;
 
-import static java.util.Arrays.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 
 import java.lang.annotation.Annotation;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Collection;
-import java.util.Random;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.NoopAnnotator;
 import org.jsonschema2pojo.SchemaStore;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.codemodel.JAnnotationUse;
 import com.sun.codemodel.JFieldVar;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Size;
 
 /**
  * Tests {@link MinimumMaximumRuleTest}
  */
-@RunWith(Parameterized.class)
-public class MinimumMaximumRuleTest {
+@ExtendWith(MockitoExtension.class)
+class MinimumMaximumRuleTest {
 
-    private final boolean isApplicable;
+    private final ObjectNode node = JsonNodeFactory.instance.objectNode();
+    private Class<? extends Annotation> decimalMaxClass;
+    private Class<? extends Annotation> decimalMinClass;
     private MinimumMaximumRule rule;
-    private final Class<?> fieldClass;
-    private final boolean useJakartaValidation;
-    private final Class<? extends Annotation> decimalMaxClass;
-    private final Class<? extends Annotation> decimalMinClass;
-    private final Class<? extends Annotation> sizeClass;
     @Mock
     private GenerationConfig config;
-    @Mock
-    private JsonNode node;
-    @Mock
-    private JsonNode subNode;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private JFieldVar fieldVar;
     @Mock
@@ -74,132 +67,168 @@ public class MinimumMaximumRuleTest {
     @Mock
     private JAnnotationUse annotationMin;
 
-    @Parameterized.Parameters
-    public static Collection<Object[]> data() {
-        return asList(new Object[][] {
-                { true, BigDecimal.class },
-                { true, BigInteger.class },
-                { true, String.class },
-                { true, Byte.class },
-                { true, Short.class },
-                { true, Integer.class },
-                { true, Long.class },
-                { false, Float.class },
-                { false, Double.class },
-        }).stream()
-                .flatMap(o -> Stream.of(true, false).map(b -> Stream.concat(stream(o), Stream.of(b)).toArray()))
-                .collect(Collectors.toList());
+    static Stream<Arguments> applicableTypes() {
+        // After removal of javax.validation support given method should return Stream<Class<?>>
+        return Stream.of(BigDecimal.class, BigInteger.class, String.class, Byte.class, Short.class, Integer.class, Long.class)
+                .flatMap(o -> Stream.of(true, false).map(b -> Arguments.of(o, b)));
     }
 
-    public MinimumMaximumRuleTest(boolean isApplicable, Class<?> fieldClass, boolean useJakartaValidation) {
-        this.isApplicable = isApplicable;
-        this.fieldClass = fieldClass;
-        this.useJakartaValidation = useJakartaValidation;
+    private void setMinMaxClasses(boolean useJakartaValidation) {
+        // After removal of javax.validation support decimalMaxClass and decimalMinClass can be removed/inlined
         if (useJakartaValidation) {
             decimalMaxClass = DecimalMax.class;
             decimalMinClass = DecimalMin.class;
-            sizeClass = Size.class;
         } else {
             decimalMaxClass = javax.validation.constraints.DecimalMax.class;
             decimalMinClass = javax.validation.constraints.DecimalMin.class;
-            sizeClass = javax.validation.constraints.Size.class;
         }
     }
 
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void setUp() {
         rule = new MinimumMaximumRule(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()));
+    }
+
+    @ParameterizedTest
+    @MethodSource("applicableTypes")
+    void testMinimum(Class<?> fieldClass, boolean useJakartaValidation) {
         when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
-    }
-
-    @Test
-    public void testMinimum() {
+        setMinMaxClasses(useJakartaValidation);
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
-        final String minValue = Integer.toString(new Random().nextInt());
-        when(subNode.asText()).thenReturn(minValue);
-        when(node.get("minimum")).thenReturn(subNode);
+        final int minValue = RandomUtils.nextInt();
+        node.put("minimum", minValue);
         when(fieldVar.annotate(decimalMinClass)).thenReturn(annotationMin);
-        when(node.has("minimum")).thenReturn(true);
         when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
 
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, times(isApplicable ? 1 : 0)).annotate(decimalMinClass);
-        verify(annotationMin, times(isApplicable ? 1 : 0)).param("value", minValue);
+        verify(fieldVar).annotate(decimalMinClass);
+        verify(annotationMin).param("value", Integer.toString(minValue));
         verify(fieldVar, never()).annotate(decimalMaxClass);
-        verify(annotationMax, never()).param(eq("value"), anyString());
+        verifyNoInteractions(annotationMax);
     }
 
-    @Test
-    public void testMaximum() {
+    @ParameterizedTest
+    @MethodSource("applicableTypes")
+    void testMaximum(Class<?> fieldClass, boolean useJakartaValidation) {
+        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
+        setMinMaxClasses(useJakartaValidation);
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
-        final String maxValue = Integer.toString(new Random().nextInt());
-        when(subNode.asText()).thenReturn(maxValue);
-        when(node.get("maximum")).thenReturn(subNode);
+        final int maxValue = RandomUtils.nextInt();
+        node.put("maximum", maxValue);
         when(fieldVar.annotate(decimalMaxClass)).thenReturn(annotationMax);
-        when(node.has("maximum")).thenReturn(true);
         when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
 
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, times(isApplicable ? 1 : 0)).annotate(decimalMaxClass);
-        verify(annotationMax, times(isApplicable ? 1 : 0)).param("value", maxValue);
+        verify(fieldVar).annotate(decimalMaxClass);
+        verify(annotationMax).param("value", Integer.toString(maxValue));
         verify(fieldVar, never()).annotate(decimalMinClass);
-        verify(annotationMin, never()).param(eq("value"), anyString());
+        verifyNoInteractions(annotationMin);
     }
 
-    @Test
-    public void testMaximumAndMinimum() {
+    @ParameterizedTest
+    @MethodSource("applicableTypes")
+    void testMaximumAndMinimum(Class<?> fieldClass, boolean useJakartaValidation) {
+        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
+        setMinMaxClasses(useJakartaValidation);
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
-        final String minValue = Integer.toString(new Random().nextInt());
-        final String maxValue = Integer.toString(new Random().nextInt());
-        JsonNode maxSubNode = Mockito.mock(JsonNode.class);
-        when(subNode.asText()).thenReturn(minValue);
-        when(maxSubNode.asText()).thenReturn(maxValue);
-        when(node.get("minimum")).thenReturn(subNode);
-        when(node.get("maximum")).thenReturn(maxSubNode);
+        final int minValue = RandomUtils.nextInt();
+        final int maxValue = RandomUtils.nextInt();
         when(fieldVar.annotate(decimalMinClass)).thenReturn(annotationMin);
         when(fieldVar.annotate(decimalMaxClass)).thenReturn(annotationMax);
-        when(node.has("minimum")).thenReturn(true);
-        when(node.has("maximum")).thenReturn(true);
+        node.put("minimum", minValue);
+        node.put("maximum", maxValue);
         when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
 
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, times(isApplicable ? 1 : 0)).annotate(decimalMinClass);
-        verify(annotationMin, times(isApplicable ? 1 : 0)).param("value", minValue);
-        verify(fieldVar, times(isApplicable ? 1 : 0)).annotate(decimalMaxClass);
-        verify(annotationMax, times(isApplicable ? 1 : 0)).param("value", maxValue);
+        verify(fieldVar).annotate(decimalMinClass);
+        verify(annotationMin).param("value", Integer.toString(minValue));
+        verify(fieldVar).annotate(decimalMaxClass);
+        verify(annotationMax).param("value", Integer.toString(maxValue));
     }
 
-    @Test
-    public void testNotUsed() {
+    static Stream<Class<?>> nonApplicableTypes() {
+        return Stream.of(Float.class, Double.class);
+    }
+
+    @ParameterizedTest
+    @MethodSource("nonApplicableTypes")
+    void nonApplicableType_nodeHasMinimum_ruleNotApplied(Class<?> fieldClass) {
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
-        when(node.has("minimum")).thenReturn(false);
-        when(node.has("maximum")).thenReturn(false);
+
+        node.put("minimum", RandomUtils.nextInt());
         when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
 
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, never()).annotate(sizeClass);
-        verify(annotationMin, never()).param(anyString(), anyString());
-        verify(annotationMax, never()).param(anyString(), anyString());
+        verify(fieldVar, never()).annotate(ArgumentMatchers.<Class<? extends Annotation>>any());
+        verifyNoInteractions(annotationMin, annotationMax);
+        verify(config, never()).isUseJakartaValidation();
+    }
+
+    @ParameterizedTest
+    @MethodSource("nonApplicableTypes")
+    void nonApplicableType_nodeHasMaximum_ruleNotApplied(Class<?> fieldClass) {
+        when(config.isIncludeJsr303Annotations()).thenReturn(true);
+
+        node.put("maximum", RandomUtils.nextInt());
+        when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
+
+        JFieldVar result = rule.apply("node", node, null, fieldVar, null);
+        assertThat(fieldVar, sameInstance(result));
+
+        verify(fieldVar, never()).annotate(ArgumentMatchers.<Class<? extends Annotation>>any());
+        verifyNoInteractions(annotationMax, annotationMin);
+        verify(config, never()).isUseJakartaValidation();
+    }
+
+    @ParameterizedTest
+    @MethodSource("nonApplicableTypes")
+    void nonApplicableType_nodeHasMinimumAndMaximum_ruleNotApplied(Class<?> fieldClass) {
+        when(config.isIncludeJsr303Annotations()).thenReturn(true);
+
+        node.put("minimum", RandomUtils.nextInt());
+        node.put("maximum", RandomUtils.nextInt());
+        when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
+
+        JFieldVar result = rule.apply("node", node, null, fieldVar, null);
+        assertThat(fieldVar, sameInstance(result));
+
+        verify(fieldVar, never()).annotate(ArgumentMatchers.<Class<? extends Annotation>>any());
+        verifyNoInteractions(annotationMin, annotationMax);
+        verify(config, never()).isUseJakartaValidation();
+    }
+
+    @ParameterizedTest
+    @MethodSource("applicableTypes")
+    void testNotUsed(Class<?> fieldClass) {
+        when(config.isIncludeJsr303Annotations()).thenReturn(true);
+        when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
+
+        assertThat(node.get("minimum"), is(nullValue()));
+        assertThat(node.get("maximum"), is(nullValue()));
+
+        JFieldVar result = rule.apply("node", node, null, fieldVar, null);
+        assertThat(fieldVar, sameInstance(result));
+
+        verify(fieldVar, never()).annotate(ArgumentMatchers.<Class<? extends Annotation>>any());
+        verifyNoInteractions(annotationMax, annotationMin);
+        verify(config, never()).isUseJakartaValidation();
     }
 
     @Test
-    public void jsrDisable() {
+    void jsrDisable() {
         when(config.isIncludeJsr303Annotations()).thenReturn(false);
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, never()).annotate(decimalMinClass);
-        verify(annotationMin, never()).param(anyString(), anyString());
-        verify(fieldVar, never()).annotate(decimalMaxClass);
-        verify(annotationMax, never()).param(anyString(), anyString());
+        verifyNoInteractions(annotationMax, annotationMin, fieldVar);
+        verify(config, never()).isUseJakartaValidation();
     }
 }

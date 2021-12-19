@@ -24,26 +24,27 @@ import static org.mockito.Mockito.*;
 import java.io.File;
 import java.util.Comparator;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class SourceSortOrderTest {
+class SourceSortOrderTest {
+
     @Test
-    public void testTwoFilesAreCompared_FILES_FIRST() {
+    void testTwoFilesAreCompared_FILES_FIRST() {
         testTwoFilesAreCompared(SourceSortOrder.FILES_FIRST.getComparator());
     }
 
     @Test
-    public void twoDirectoriesAreCompared_FILES_FIRST() {
+    void twoDirectoriesAreCompared_FILES_FIRST() {
         testTwoDirectoriesAreCompared(SourceSortOrder.FILES_FIRST.getComparator());
     }
 
     @Test
-    public void testTwoFilesAreCompared_SUBDIRS_FIRST() {
+    void testTwoFilesAreCompared_SUBDIRS_FIRST() {
         testTwoFilesAreCompared(SourceSortOrder.SUBDIRS_FIRST.getComparator());
     }
 
     @Test
-    public void twoDirectoriesAreCompared_SUBDIRS_FIRST() {
+    void twoDirectoriesAreCompared_SUBDIRS_FIRST() {
         testTwoDirectoriesAreCompared(SourceSortOrder.SUBDIRS_FIRST.getComparator());
     }
 
@@ -51,7 +52,8 @@ public class SourceSortOrderTest {
         final File mockFileA = mockFile();
         final File mockFileB = mockFile();
 
-        fileComparator.compare(mockFileA, mockFileB);
+        // mocks by default return 0 if references are the same
+        assertThat(fileComparator.compare(mockFileA, mockFileB), is(not(0)));
         verify(mockFileA, atLeast(1)).compareTo(mockFileB);
     }
 
@@ -59,12 +61,13 @@ public class SourceSortOrderTest {
         final File mockDirA = mockDirectory();
         final File mockDirB = mockDirectory();
 
-        fileComparator.compare(mockDirA, mockDirB);
+        // mocks by default return 0 if references are the same
+        assertThat(fileComparator.compare(mockDirA, mockDirB), is(not(0)));
         verify(mockDirA, atLeast(1)).compareTo(mockDirB);
     }
 
     @Test
-    public void filesBeforeDirectories_FILES_FIRST() {
+    void filesBeforeDirectories_FILES_FIRST() {
         final Comparator<File> fileComparator = SourceSortOrder.FILES_FIRST.getComparator();
         final File mockFile = mockFile();
         final File mockDir = mockDirectory();
@@ -77,7 +80,7 @@ public class SourceSortOrderTest {
     }
 
     @Test
-    public void filesBeforeDirectories_SUBDIRS_FIRST() {
+    void filesBeforeDirectories_SUBDIRS_FIRST() {
         final Comparator<File> fileComparator = SourceSortOrder.SUBDIRS_FIRST.getComparator();
         final File mockFile = mockFile();
         final File mockDir = mockDirectory();

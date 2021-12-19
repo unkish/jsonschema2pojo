@@ -17,8 +17,8 @@
 package org.jsonschema2pojo.rules;
 
 import static java.util.Arrays.*;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import java.net.URI;
@@ -30,26 +30,20 @@ import java.util.regex.Pattern;
 import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.NoopAnnotator;
 import org.jsonschema2pojo.SchemaStore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.sun.codemodel.JCodeModel;
 import com.sun.codemodel.JType;
 
-@RunWith(Parameterized.class)
-public class FormatRuleTest {
+class FormatRuleTest {
 
-    private GenerationConfig config = mock(GenerationConfig.class);
-    private FormatRule rule = new FormatRule(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()));
+    private final GenerationConfig config = mock(GenerationConfig.class);
+    private final FormatRule rule = new FormatRule(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()));
 
-    private final String formatValue;
-    private final Class<?> expectedType;
-
-    @Parameters
-    public static Collection<Object[]> data() {
+    static Collection<Object[]> data() {
         return asList(new Object[][] {
                 { "date-time", Date.class },
                 { "date", String.class },
@@ -67,13 +61,9 @@ public class FormatRuleTest {
                 { "uuid", UUID.class }});
     }
 
-    public FormatRuleTest(String formatValue, Class<?> expectedType) {
-        this.formatValue = formatValue;
-        this.expectedType = expectedType;
-    }
-
-    @Test
-    public void applyGeneratesTypeFromFormatValue() {
+    @ParameterizedTest
+    @MethodSource("data")
+    void applyGeneratesTypeFromFormatValue(String formatValue, Class<?> expectedType) {
         TextNode formatNode = TextNode.valueOf(formatValue);
 
         JType result = rule.apply("fooBar", formatNode, null, new JCodeModel().ref(String.class), null);
@@ -82,7 +72,7 @@ public class FormatRuleTest {
     }
 
     @Test
-    public void applyDefaultsToBaseType() {
+    void applyDefaultsToBaseType() {
         TextNode formatNode = TextNode.valueOf("unknown-format");
 
         JType baseType = new JCodeModel().ref(Long.class);

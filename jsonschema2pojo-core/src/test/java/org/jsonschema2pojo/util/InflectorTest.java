@@ -16,15 +16,15 @@
 
 package org.jsonschema2pojo.util;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class InflectorTest {
+class InflectorTest {
 
     @Test
-    public void testSingularize() {
+    void testSingularize() {
 
         assertThat(Inflector.getInstance().singularize("dwarves"), is("dwarf"));
         assertThat(Inflector.getInstance().singularize("curves"), is("curve"));
@@ -70,7 +70,7 @@ public class InflectorTest {
     }
 
     @Test
-    public void testPluralize() {
+    void testPluralize() {
         assertThat(Inflector.getInstance().pluralize("mattress"), is("mattresses"));
         assertThat(Inflector.getInstance().pluralize("address"), is("addresses"));
 

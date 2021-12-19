@@ -16,31 +16,33 @@
 
 package org.jsonschema2pojo.rules;
 
-import static java.util.Arrays.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Random;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.NoopAnnotator;
 import org.jsonschema2pojo.SchemaStore;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.codemodel.JAnnotationUse;
 import com.sun.codemodel.JFieldVar;
 
@@ -49,160 +51,183 @@ import jakarta.validation.constraints.Size;
 /**
  * Tests {@link MinLengthMaxLengthRuleTest}
  */
-@RunWith(Parameterized.class)
-public class MinLengthMaxLengthRuleTest {
+@ExtendWith(MockitoExtension.class)
+class MinLengthMaxLengthRuleTest {
 
-    private final boolean isApplicable;
+    private final ObjectNode node = JsonNodeFactory.instance.objectNode();
     private MinLengthMaxLengthRule rule;
-    private final Class<?> fieldClass;
-    private final boolean useJakartaValidation;
-    private final Class<? extends Annotation> sizeClass;
+    private Class<? extends Annotation> sizeClass;
     @Mock
     private GenerationConfig config;
-    @Mock
-    private JsonNode node;
-    @Mock
-    private JsonNode subNode;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private JFieldVar fieldVar;
     @Mock
     private JAnnotationUse annotation;
 
-    @Parameterized.Parameters
-    public static Collection<Object[]> data() {
-        return asList(new Object[][] {
-                { true, String.class },
-                { true, Collection.class },
-                { true, Map.class },
-                { true, Array.class },
-                { false, Byte.class },
-                { false, Short.class },
-                { false, Integer.class },
-                { false, Long.class },
-                { false, Float.class },
-                { false, Double.class },
-        }).stream()
-                .flatMap(o -> Stream.of(true, false).map(b -> Stream.concat(stream(o), Stream.of(b)).toArray()))
-                .collect(Collectors.toList());
+    static Stream<Arguments> applicableTypes() {
+        // After removal of javax.validation support given method should return Stream<Class<?>>
+        return Stream.of(String.class, Collection.class, Map.class, Array.class)
+                .flatMap(o -> Stream.of(true, false).map(b -> Arguments.of(o, b)));
     }
 
-    public MinLengthMaxLengthRuleTest(boolean isApplicable, Class<?> fieldClass, boolean useJakartaValidation) {
-        this.isApplicable = isApplicable;
-        this.fieldClass = fieldClass;
-        this.useJakartaValidation = useJakartaValidation;
-        this.sizeClass = useJakartaValidation ? Size.class : javax.validation.constraints.Size.class;
+    static Stream<Class<?>> nonApplicableTypes() {
+        return Stream.of(Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class);
     }
 
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void setUp() {
         rule = new MinLengthMaxLengthRule(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()));
-        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
     }
 
-    @Test
-    public void testMinLength() {
+    private void setSizeClass(boolean useJakartaValidation) {
+        // After removal of javax.validation support sizeClass can be removed/inlined
+        sizeClass = useJakartaValidation ? Size.class : javax.validation.constraints.Size.class;
+    }
+
+    @ParameterizedTest
+    @MethodSource("applicableTypes")
+    void testMinLength(Class<?> fieldClass, boolean useJakartaValidation) {
+        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
+        setSizeClass(useJakartaValidation);
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
-        final int minValue = new Random().nextInt();
-        when(subNode.asInt()).thenReturn(minValue);
-        when(node.get("minLength")).thenReturn(subNode);
+        final int minValue = RandomUtils.nextInt();
+        node.put("minLength", minValue);
         when(fieldVar.annotate(sizeClass)).thenReturn(annotation);
-        when(node.has("minLength")).thenReturn(true);
         when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
 
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, times(isApplicable ? 1 : 0)).annotate(sizeClass);
-        verify(annotation, times(isApplicable ? 1 : 0)).param("min", minValue);
+        verify(fieldVar).annotate(sizeClass);
+        verify(annotation).param("min", minValue);
         verify(annotation, never()).param(eq("max"), anyString());
     }
 
-    @Test
-    public void testMaxLength() {
+    @ParameterizedTest
+    @MethodSource("nonApplicableTypes")
+    void nonApplicableType_nodeWithMinLength_ruleNotApplied(Class<?> fieldClass) {
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
-        final int maxValue = new Random().nextInt();
-        when(subNode.asInt()).thenReturn(maxValue);
-        when(node.get("maxLength")).thenReturn(subNode);
-        when(fieldVar.annotate(sizeClass)).thenReturn(annotation);
-        when(node.has("maxLength")).thenReturn(true);
+        node.put("minLength", RandomUtils.nextInt());
         when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
 
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, times(isApplicable ? 1 : 0)).annotate(sizeClass);
-        verify(annotation, times(isApplicable ? 1 : 0)).param("max", maxValue);
+        verify(fieldVar, never()).annotate(ArgumentMatchers.<Class<? extends Annotation>>any());
+        verifyNoInteractions(annotation);
+        verify(config, never()).isUseJakartaValidation();
+    }
+
+    @ParameterizedTest
+    @MethodSource("applicableTypes")
+    void testMaxLength(Class<?> fieldClass, boolean useJakartaValidation) {
+        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
+        setSizeClass(useJakartaValidation);
+        when(config.isIncludeJsr303Annotations()).thenReturn(true);
+        final int maxValue = RandomUtils.nextInt();
+        node.put("maxLength", maxValue);
+        when(fieldVar.annotate(sizeClass)).thenReturn(annotation);
+        when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
+
+        JFieldVar result = rule.apply("node", node, null, fieldVar, null);
+        assertThat(fieldVar, sameInstance(result));
+
+        verify(fieldVar).annotate(sizeClass);
+        verify(annotation).param("max", maxValue);
         verify(annotation, never()).param(eq("min"), anyInt());
     }
 
-    @Test
-    public void testMaxAndMinLength() {
+    @ParameterizedTest
+    @MethodSource("nonApplicableTypes")
+    void nonApplicableType_nodeWithMaxLength_ruleNotApplied(Class<?> fieldClass) {
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
-        final int minValue = new Random().nextInt();
-        final int maxValue = new Random().nextInt();
-        JsonNode maxSubNode = Mockito.mock(JsonNode.class);
-        when(subNode.asInt()).thenReturn(minValue);
-        when(maxSubNode.asInt()).thenReturn(maxValue);
-        when(node.get("minLength")).thenReturn(subNode);
-        when(node.get("maxLength")).thenReturn(maxSubNode);
-        when(fieldVar.annotate(sizeClass)).thenReturn(annotation);
-        when(node.has("minLength")).thenReturn(true);
-        when(node.has("maxLength")).thenReturn(true);
+        node.put("maxLength", RandomUtils.nextInt());
         when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
 
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, times(isApplicable ? 1 : 0)).annotate(sizeClass);
-        verify(annotation, times(isApplicable ? 1 : 0)).param("min", minValue);
-        verify(annotation, times(isApplicable ? 1 : 0)).param("max", maxValue);
+        verify(fieldVar, never()).annotate(ArgumentMatchers.<Class<? extends Annotation>>any());
+        verifyNoInteractions(annotation);
+        verify(config, never()).isUseJakartaValidation();
     }
 
-    @Test
-    public void testMaxAndMinLengthGenericsOnType() {
+    @ParameterizedTest
+    @MethodSource("applicableTypes")
+    void testMaxAndMinLength(Class<?> fieldClass, boolean useJakartaValidation) {
+        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
+        setSizeClass(useJakartaValidation);
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
-        final int minValue = new Random().nextInt();
-        final int maxValue = new Random().nextInt();
-        JsonNode maxSubNode = Mockito.mock(JsonNode.class);
-        when(subNode.asInt()).thenReturn(minValue);
-        when(maxSubNode.asInt()).thenReturn(maxValue);
-        when(node.get("minLength")).thenReturn(subNode);
-        when(node.get("maxLength")).thenReturn(maxSubNode);
+        final int minValue = RandomUtils.nextInt();
+        final int maxValue = RandomUtils.nextInt();
+        node.put("minLength", minValue);
+        node.put("maxLength", maxValue);
         when(fieldVar.annotate(sizeClass)).thenReturn(annotation);
-        when(node.has("minLength")).thenReturn(true);
-        when(node.has("maxLength")).thenReturn(true);
+        when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
+
+        JFieldVar result = rule.apply("node", node, null, fieldVar, null);
+        assertThat(fieldVar, sameInstance(result));
+
+        verify(fieldVar).annotate(sizeClass);
+        verify(annotation).param("min", minValue);
+        verify(annotation).param("max", maxValue);
+    }
+
+    @ParameterizedTest
+    @MethodSource("nonApplicableTypes")
+    void nonApplicableType_nodeWithMaxLengthAndMinLength_ruleNotApplied(Class<?> fieldClass) {
+        when(config.isIncludeJsr303Annotations()).thenReturn(true);
+        node.put("minLength", RandomUtils.nextInt());
+        node.put("maxLength", RandomUtils.nextInt());
+        when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
+
+        JFieldVar result = rule.apply("node", node, null, fieldVar, null);
+        assertThat(fieldVar, sameInstance(result));
+
+        verify(fieldVar, never()).annotate(ArgumentMatchers.<Class<? extends Annotation>>any());
+        verifyNoInteractions(annotation);
+        verify(config, never()).isUseJakartaValidation();
+    }
+
+    @ParameterizedTest
+    @MethodSource("applicableTypes")
+    void testMaxAndMinLengthGenericsOnType(Class<?> fieldClass, boolean useJakartaValidation) {
+        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
+        setSizeClass(useJakartaValidation);
+        when(config.isIncludeJsr303Annotations()).thenReturn(true);
+        final int minValue = RandomUtils.nextInt();
+        final int maxValue = RandomUtils.nextInt();
+        node.put("minLength", minValue);
+        node.put("maxLength", maxValue);
+        when(fieldVar.annotate(sizeClass)).thenReturn(annotation);
         when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName() + "<String>");
 
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, times(isApplicable ? 1 : 0)).annotate(sizeClass);
-        verify(annotation, times(isApplicable ? 1 : 0)).param("min", minValue);
-        verify(annotation, times(isApplicable ? 1 : 0)).param("max", maxValue);
+        verify(fieldVar).annotate(sizeClass);
+        verify(annotation).param("min", minValue);
+        verify(annotation).param("max", maxValue);
     }
 
     @Test
-    public void testNotUsed() {
+    void testNotUsed() {
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
-        when(node.has("minLength")).thenReturn(false);
-        when(node.has("maxLength")).thenReturn(false);
-        when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
 
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, never()).annotate(sizeClass);
-        verify(annotation, never()).param(anyString(), anyInt());
+        verifyNoInteractions(annotation, fieldVar);
+        verify(config, never()).isUseJakartaValidation();
     }
 
     @Test
-    public void jsrDisable() {
+    void jsrDisable() {
         when(config.isIncludeJsr303Annotations()).thenReturn(false);
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, never()).annotate(sizeClass);
-        verify(annotation, never()).param(anyString(), anyInt());
+        verifyNoInteractions(fieldVar, annotation);
+        verify(config, never()).isUseJakartaValidation();
     }
 }

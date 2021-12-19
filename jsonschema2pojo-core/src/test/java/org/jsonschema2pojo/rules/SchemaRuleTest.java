@@ -16,17 +16,19 @@
 
 package org.jsonschema2pojo.rules;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.apache.commons.io.IOUtils;
 import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.Schema;
 import org.jsonschema2pojo.SchemaStore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -37,7 +39,7 @@ import com.sun.codemodel.JCodeModel;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JType;
 
-public class SchemaRuleTest {
+class SchemaRuleTest {
 
     private static final String NODE_NAME = "nodeName";
     private static final String TARGET_CLASS_NAME = SchemaRuleTest.class.getName() + ".DummyClass";
@@ -46,9 +48,9 @@ public class SchemaRuleTest {
     private final SchemaRule rule = new SchemaRule(mockRuleFactory);
 
     @Test
-    public void refsToOtherSchemasAreLoaded() throws URISyntaxException, JClassAlreadyExistsException {
+    void refsToOtherSchemasAreLoaded() throws IOException, URISyntaxException, JClassAlreadyExistsException {
 
-        URI schemaUri = getClass().getResource("/schema/address.json").toURI();
+        URI schemaUri = IOUtils.resourceToURL("/schema/address.json").toURI();
 
         ObjectNode schemaWithRef = new ObjectMapper().createObjectNode();
         schemaWithRef.put("$ref", schemaUri.toString());
@@ -77,7 +79,7 @@ public class SchemaRuleTest {
     }
 
     @Test
-    public void enumAsRootIsGeneratedCorrectly() throws JClassAlreadyExistsException {
+    void enumAsRootIsGeneratedCorrectly() throws JClassAlreadyExistsException {
 
         ObjectNode schemaContent = new ObjectMapper().createObjectNode();
         ObjectNode enumNode = schemaContent.objectNode();
@@ -103,11 +105,11 @@ public class SchemaRuleTest {
     }
 
     @Test
-    public void existingTypeIsUsedWhenTypeIsAlreadyGenerated() throws URISyntaxException {
+    void existingTypeIsUsedWhenTypeIsAlreadyGenerated() throws IOException, URISyntaxException {
 
         JType previouslyGeneratedType = mock(JType.class);
 
-        URI schemaUri = getClass().getResource("/schema/address.json").toURI();
+        URI schemaUri = IOUtils.resourceToURL("/schema/address.json").toURI();
 
         SchemaStore schemaStore = new SchemaStore();
         Schema schema = schemaStore.create(schemaUri, "#/.");

@@ -19,7 +19,7 @@ package org.jsonschema2pojo.rules;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -28,14 +28,14 @@ import com.sun.codemodel.JCodeModel;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JDocComment;
 
-public class CommentRuleTest {
+class CommentRuleTest {
 
     private static final String TARGET_CLASS_NAME = CommentRuleTest.class.getName() + ".DummyClass";
 
-    private CommentRule rule = new CommentRule();
+    private final CommentRule rule = new CommentRule();
 
     @Test
-    public void applyAddsCommentToJavadoc() throws JClassAlreadyExistsException {
+    void applyAddsCommentToJavadoc() throws JClassAlreadyExistsException {
 
         JDefinedClass jclass = new JCodeModel()._class(TARGET_CLASS_NAME);
 

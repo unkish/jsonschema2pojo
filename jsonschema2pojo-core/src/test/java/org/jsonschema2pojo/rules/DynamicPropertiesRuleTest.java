@@ -20,45 +20,37 @@ import static com.sun.codemodel.JMod.*;
 import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 
-import org.junit.Before;
-import org.junit.Test;
+import java.io.StringWriter;
+
+import org.junit.jupiter.api.Test;
 
 import com.sun.codemodel.JClassAlreadyExistsException;
 import com.sun.codemodel.JCodeModel;
 import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JFieldRef;
-import com.sun.codemodel.JMethod;
+import com.sun.codemodel.JFieldVar;
+import com.sun.codemodel.JFormatter;
 
-public class DynamicPropertiesRuleTest {
+class DynamicPropertiesRuleTest {
 
-    JCodeModel codeModel = new JCodeModel();
-    RuleFactory factory;
-    DynamicPropertiesRule rule;
-
-    JDefinedClass type;
-    JMethod numberGetter;
-    JMethod numberSetter;
-
-    JDefinedClass type2;
-
-    @Before
-    public void setUp() throws JClassAlreadyExistsException {
-        type = codeModel._class("org.jsonschema2pojo.rules.ExampleClass");
-        numberGetter = type.method(PUBLIC, codeModel._ref(Integer.class), "getNumber");
-        numberSetter = type.method(PUBLIC, codeModel._ref(Integer.class), "setNumber");
-        numberSetter.param(codeModel._ref(Integer.class), "value");
-
-        type2 = codeModel._class("org.jsonschema2pojo.rules.ExampleParentClass");
-
-        factory = new RuleFactory();
-        rule = new DynamicPropertiesRule(factory);
-
-    }
+    private final JCodeModel codeModel = new JCodeModel();
+    private final DynamicPropertiesRule rule = new DynamicPropertiesRule(new RuleFactory());
 
     @Test
-    public void shouldAddNotFoundField() {
-        JFieldRef var = rule.getOrAddNotFoundVar(type);
-        assertThat(var, notNullValue());
+    void shouldAddNotFoundField() throws JClassAlreadyExistsException {
+        final String className = "org.jsonschema2pojo.rules.ExampleClass";
+        final JDefinedClass type = codeModel._class(className);
+        assertThat(type.fields().entrySet(), is(empty()));
+
+        final JFieldRef var = rule.getOrAddNotFoundVar(type);
+        assertThat(type.fields(), hasKey(DynamicPropertiesRule.NOT_FOUND_VALUE_FIELD));
+        final JFieldVar notFoundValueField = type.fields().get(DynamicPropertiesRule.NOT_FOUND_VALUE_FIELD);
+        assertThat(notFoundValueField.mods().getValue(), is(PROTECTED | STATIC | FINAL));
+        assertThat(notFoundValueField.type().binaryName(), is(Object.class.getName()));
+
+        final StringWriter sw = new StringWriter();
+        var.generate(new JFormatter(sw));
+        assertThat(sw.toString(), is(className + "." + DynamicPropertiesRule.NOT_FOUND_VALUE_FIELD));
     }
 
 }

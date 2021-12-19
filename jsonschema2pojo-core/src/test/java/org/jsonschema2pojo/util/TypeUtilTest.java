@@ -16,20 +16,21 @@
 
 package org.jsonschema2pojo.util;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.sun.codemodel.JClass;
 import com.sun.codemodel.JCodeModel;
 
-public class TypeUtilTest {
+class TypeUtilTest {
 
     @Test
-    public void testResolveTypeCanHandleWildcard() {
+    void testResolveTypeCanHandleWildcard() {
         final JCodeModel codeModel = new JCodeModel();
         final JClass _class = TypeUtil.resolveType(codeModel.rootPackage(), "java.util.List<?>");
 
@@ -41,7 +42,7 @@ public class TypeUtilTest {
     }
 
     @Test
-    public void testResolveTypeCanHandleExtendsWildcard() {
+    void testResolveTypeCanHandleExtendsWildcard() {
         final JCodeModel codeModel = new JCodeModel();
         final JClass _class = TypeUtil.resolveType(codeModel.rootPackage(), "java.util.List<? extends java.lang.Number>");
 
@@ -52,8 +53,10 @@ public class TypeUtilTest {
         assertThat(_class.getTypeParameters().get(0)._extends(), is(equalTo(codeModel.ref(Number.class))));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testResolveTypeForSuperWildcardThrowsException() {
-        TypeUtil.resolveType(new JCodeModel().rootPackage(), "java.util.List<? super java.lang.String>");
+    @Test
+    void testResolveTypeForSuperWildcardThrowsException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> TypeUtil.resolveType(new JCodeModel().rootPackage(), "java.util.List<? super java.lang.String>"));
     }
 }

@@ -16,46 +16,48 @@
 
 package org.jsonschema2pojo;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class ContentResolverTest {
+class ContentResolverTest {
 
-    private ContentResolver resolver = new ContentResolver();
-    
-    @Test(expected=IllegalArgumentException.class)
-    public void wrongProtocolCausesIllegalArgumentException() {
+    private final ContentResolver resolver = new ContentResolver();
 
-        URI uriWithUnrecognisedProtocol = URI.create("foobar://schema/address.json"); 
-        resolver.resolve(uriWithUnrecognisedProtocol);
+    @Test
+    void wrongProtocolCausesIllegalArgumentException() {
+
+        URI uriWithUnrecognisedProtocol = URI.create("foobar://schema/address.json");
+        assertThrows(IllegalArgumentException.class, () -> resolver.resolve(uriWithUnrecognisedProtocol));
     }
 
     @Test
-    public void fileLinkIsResolvedToContent() throws IOException {
-        
+    void fileLinkIsResolvedToContent() throws IOException {
+
         URI schemaFile = createSchemaFile();
-        
+
         JsonNode uriContent = resolver.resolve(schemaFile);
-        
+
         assertThat(uriContent.path("type").asText(), is(equalTo("string")));
     }
 
     @Test
-    public void classpathLinkIsResolvedToContent() {
-        
+    void classpathLinkIsResolvedToContent() {
+
         URI schemaFile;
         JsonNode uriContent;
-        
+
         schemaFile = URI.create("classpath:schema/address.json");
         uriContent = resolver.resolve(schemaFile);
         assertThat(uriContent.path("description").asText().length(), is(greaterThan(0)));
@@ -79,7 +81,7 @@ public class ContentResolverTest {
         tempFile.deleteOnExit();
 
         try (OutputStream outputStream = new FileOutputStream(tempFile)) {
-            outputStream.write("{\"type\" : \"string\"}".getBytes("utf-8"));
+            outputStream.write("{\"type\" : \"string\"}".getBytes(StandardCharsets.UTF_8));
         }
         
         return tempFile.toURI();

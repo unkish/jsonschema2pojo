@@ -16,22 +16,23 @@
 
 package org.jsonschema2pojo;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.jsonschema2pojo.AnnotationStyle.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class AnnotatorFactoryTest {
+class AnnotatorFactoryTest {
 
-    private AnnotatorFactory factory = new AnnotatorFactory(new DefaultGenerationConfig());
+    private final AnnotatorFactory factory = new AnnotatorFactory(new DefaultGenerationConfig());
 
     @Test
-    public void canCreateCorrectAnnotatorFromAnnotationStyle() {
+    void canCreateCorrectAnnotatorFromAnnotationStyle() {
 
         assertThat(factory.getAnnotator(JACKSON), is(instanceOf(Jackson2Annotator.class)));
         assertThat(factory.getAnnotator(JACKSON2), is(instanceOf(Jackson2Annotator.class)));
@@ -42,14 +43,14 @@ public class AnnotatorFactoryTest {
     }
 
     @Test
-    public void canCreateCorrectAnnotatorFromClass() {
+    void canCreateCorrectAnnotatorFromClass() {
 
         assertThat(factory.getAnnotator(Jackson2Annotator.class), is(instanceOf(Jackson2Annotator.class)));
 
     }
 
     @Test
-    public void canCreateCompositeAnnotator() {
+    void canCreateCompositeAnnotator() {
 
         Annotator annotator1 = mock(Annotator.class);
         Annotator annotator2 = mock(Annotator.class);
@@ -63,15 +64,21 @@ public class AnnotatorFactoryTest {
     }
 
     /**
-     * Test uses reflection to get passed the generic type constraints and
+     * Test uses reflection to get pass the generic type constraints and
      * invoke as if invoked through typical configuration.
      */
-    @Test(expected = IllegalArgumentException.class)
-    public void attemptToCreateAnnotatorFromIncompatibleClassCausesIllegalArgumentException() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    @Test
+    void attemptToCreateAnnotatorFromIncompatibleClassCausesIllegalArgumentException() throws ReflectiveOperationException {
 
         Method factoryMethod = AnnotatorFactory.class.getMethod("getAnnotator", Class.class);
-        factoryMethod.invoke(String.class);
-
+        InvocationTargetException invocationException = assertThrows(
+                InvocationTargetException.class,
+                () -> factoryMethod.invoke(factory, String.class));
+        assertThat(invocationException.getTargetException(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(
+                invocationException.getTargetException().getMessage(),
+                equalTo("The class name given as a custom annotator (java.lang.String) does not refer to a class that implements "
+                        + "org.jsonschema2pojo.Annotator"));
     }
 
 }

@@ -16,15 +16,15 @@
 
 package org.jsonschema2pojo.util;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class MakeUniqueClassNameTest {
+class MakeUniqueClassNameTest {
 
     @Test
-    public void testClassNameStrategy() {
+    void testClassNameStrategy() {
         assertThat(MakeUniqueClassName.makeUnique("NodeMode"), equalTo("NodeMode__1"));
         assertThat(MakeUniqueClassName.makeUnique("NodeMode__5"), equalTo("NodeMode__6"));
         assertThat(MakeUniqueClassName.makeUnique("NodeMode__10"), equalTo("NodeMode__11"));

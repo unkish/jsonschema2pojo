@@ -22,11 +22,12 @@ import static org.mockito.Mockito.*;
 
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.Charset;
 
 import org.apache.commons.io.IOUtils;
 import org.jsonschema2pojo.rules.RuleFactory;
 import org.jsonschema2pojo.rules.SchemaRule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -37,10 +38,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.codemodel.JCodeModel;
 import com.sun.codemodel.JPackage;
 
-public class SchemaMapperTest {
+class SchemaMapperTest {
 
     @Test
-    public void generateReadsSchemaAsObject() {
+    void generateReadsSchemaAsObject() {
 
         final SchemaRule mockSchemaRule = mock(SchemaRule.class);
 
@@ -63,7 +64,7 @@ public class SchemaMapperTest {
     }
 
     @Test
-    public void generateCreatesSchemaFromExampleJsonWhenInJsonMode() {
+    void generateCreatesSchemaFromExampleJsonWhenInJsonMode() {
 
         URL schemaContent = this.getClass().getResource("/schema/address.json");
 
@@ -92,9 +93,9 @@ public class SchemaMapperTest {
     }
 
     @Test
-    public void generateCreatesSchemaFromExampleJSONAsStringInput() throws IOException {
+    void generateCreatesSchemaFromExampleJSONAsStringInput() throws IOException {
 
-        String jsonContent = IOUtils.toString(this.getClass().getResourceAsStream("/example-json/user.json"));
+        String jsonContent = IOUtils.resourceToString("/example-json/user.json", Charset.defaultCharset());
 
         ObjectNode schemaNode = JsonNodeFactory.instance.objectNode();
 
@@ -120,9 +121,9 @@ public class SchemaMapperTest {
     }
 
     @Test
-    public void generateCreatesSchemaFromSchemaAsStringInput() throws IOException {
+    void generateCreatesSchemaFromSchemaAsStringInput() throws IOException {
 
-        String schemaContent = IOUtils.toString(this.getClass().getResourceAsStream("/schema/address.json"));
+        String schemaContent = IOUtils.resourceToString("/schema/address.json", Charset.defaultCharset());
 
         final SchemaRule mockSchemaRule = mock(SchemaRule.class);
 

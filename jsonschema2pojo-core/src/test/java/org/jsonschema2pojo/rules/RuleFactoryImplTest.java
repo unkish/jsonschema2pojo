@@ -16,8 +16,8 @@
 
 package org.jsonschema2pojo.rules;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import org.jsonschema2pojo.DefaultGenerationConfig;
@@ -25,12 +25,12 @@ import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.NoopAnnotator;
 import org.jsonschema2pojo.RuleLogger;
 import org.jsonschema2pojo.SchemaStore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public class RuleFactoryImplTest {
+class RuleFactoryImplTest {
 
     @Test
-    public void factoryMethodsCreateRules() {
+    void factoryMethodsCreateRules() {
 
         RuleFactory ruleFactory = new RuleFactory();
 
@@ -75,7 +75,7 @@ public class RuleFactoryImplTest {
     }
 
     @Test
-    public void generationConfigIsReturned() {
+    void generationConfigIsReturned() {
 
         GenerationConfig mockGenerationConfig = mock(GenerationConfig.class);
         RuleLogger mockRuleLogger = mock(RuleLogger.class);
@@ -88,9 +88,8 @@ public class RuleFactoryImplTest {
     }
 
     @Test
-    public void generationRuleLoggerIsReturned() {
+    void generationRuleLoggerIsReturned() {
 
-        GenerationConfig mockGenerationConfig = mock(GenerationConfig.class);
         RuleLogger mockRuleLogger = mock(RuleLogger.class);
 
         RuleFactory ruleFactory = new RuleFactory(new DefaultGenerationConfig(), new NoopAnnotator(), new SchemaStore());
@@ -100,7 +99,7 @@ public class RuleFactoryImplTest {
     }
 
     @Test
-    public void schemaStoreIsReturned() {
+    void schemaStoreIsReturned() {
 
         SchemaStore mockSchemaStore = mock(SchemaStore.class);
 

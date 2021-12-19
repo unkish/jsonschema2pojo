@@ -16,8 +16,8 @@
 
 package org.jsonschema2pojo.rules;
 
-import static java.util.Arrays.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 
 import java.lang.annotation.Annotation;
@@ -25,19 +25,22 @@ import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.NoopAnnotator;
 import org.jsonschema2pojo.SchemaStore;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sun.codemodel.JAnnotationUse;
@@ -48,14 +51,10 @@ import jakarta.validation.constraints.Pattern;
 /**
  * Tests {@link PatternRuleTest}
  */
-@RunWith(Parameterized.class)
-public class PatternRuleTest {
+@ExtendWith({ MockitoExtension.class })
+class PatternRuleTest {
 
-    private final boolean isApplicable;
     private PatternRule rule;
-    private final Class<?> fieldClass;
-    private final boolean useJakartaValidation;
-    private final Class<? extends Annotation> patternClass;
     @Mock
     private GenerationConfig config;
     @Mock
@@ -65,41 +64,23 @@ public class PatternRuleTest {
     @Mock
     private JAnnotationUse annotation;
 
-    @Parameterized.Parameters
-    public static Collection<Object[]> data() {
-        return asList(new Object[][] {
-                { true, String.class },
-                { false, UUID.class },
-                { false, Collection.class },
-                { false, Map.class },
-                { false, Array.class },
-                { false, Byte.class },
-                { false, Short.class },
-                { false, Integer.class },
-                { false, Long.class },
-                { false, Float.class },
-                { false, Double.class },
-        }).stream()
-                .flatMap(o -> Stream.of(true, false).map(b -> Stream.concat(stream(o), Stream.of(b)).toArray()))
-                .collect(Collectors.toList());
+    static Stream<Arguments> applicableTypes() {
+        // After removal of javax.validation support given method should be replaced with @ValueSource(classes = {String.class})
+        return Stream.of(String.class).flatMap(o -> Stream.of(true, false).map(b -> Arguments.of(b, o)));
     }
 
-    public PatternRuleTest(boolean isApplicable, Class<?> fieldClass, boolean useJakartaValidation) {
-        this.isApplicable = isApplicable;
-        this.fieldClass = fieldClass;
-        this.useJakartaValidation = useJakartaValidation;
-        this.patternClass = useJakartaValidation ? Pattern.class : javax.validation.constraints.Pattern.class;
-    }
-
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
+    @BeforeEach
+    void setUp() {
         rule = new PatternRule(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()));
-        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
     }
 
-    @Test
-    public void testRegex() {
+    @ParameterizedTest
+    @MethodSource("applicableTypes")
+    void testRegex(boolean isUseJakartaValidation, Class<?> fieldClass) {
+        when(config.isUseJakartaValidation()).thenReturn(isUseJakartaValidation);
+        Class<? extends Annotation> patternClass = isUseJakartaValidation
+                ? Pattern.class
+                : javax.validation.constraints.Pattern.class;
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
         final String patternValue = "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$";
 
@@ -108,20 +89,34 @@ public class PatternRuleTest {
         when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
 
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, times(isApplicable ? 1 : 0)).annotate(patternClass);
-        verify(annotation, times(isApplicable ? 1 : 0)).param("regexp", patternValue);
+        verify(fieldVar).annotate(patternClass);
+        verify(annotation).param("regexp", patternValue);
+    }
+
+    @ParameterizedTest
+    @ValueSource(classes = { UUID.class, Collection.class, Map.class, Array.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class })
+    void nonApplicableType_ruleNotApplied(Class<?> fieldClass) {
+        when(config.isIncludeJsr303Annotations()).thenReturn(true);
+        when(fieldVar.type().boxify().fullName()).thenReturn(fieldClass.getTypeName());
+
+        JFieldVar result = rule.apply("node", node, null, fieldVar, null);
+        assertThat(fieldVar, sameInstance(result));
+
+        verify(fieldVar, never()).annotate(ArgumentMatchers.<Class<? extends Annotation>>any());
+        verifyNoInteractions(annotation);
+        verify(config, never()).isUseJakartaValidation();
     }
 
     @Test
-    public void jsrDisable() {
+    void jsrDisable() {
         when(config.isIncludeJsr303Annotations()).thenReturn(false);
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
-        assertSame(fieldVar, result);
+        assertThat(fieldVar, sameInstance(result));
 
-        verify(fieldVar, never()).annotate(patternClass);
-        verify(annotation, never()).param(anyString(), anyString());
+        verifyNoInteractions(annotation, fieldVar);
+        verify(config, never()).isUseJakartaValidation();
     }
 
 }

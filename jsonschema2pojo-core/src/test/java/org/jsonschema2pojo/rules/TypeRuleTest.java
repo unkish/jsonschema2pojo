@@ -24,8 +24,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 import org.jsonschema2pojo.GenerationConfig;
-import org.junit.Before;
-import org.junit.Test;
+import org.jsonschema2pojo.Schema;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,20 +38,20 @@ import com.sun.codemodel.JDefinedClass;
 import com.sun.codemodel.JPackage;
 import com.sun.codemodel.JType;
 
-public class TypeRuleTest {
+class TypeRuleTest {
 
     private final GenerationConfig config = mock(GenerationConfig.class);
     private final RuleFactory ruleFactory = mock(RuleFactory.class);
 
     private final TypeRule rule = new TypeRule(ruleFactory);
 
-    @Before
-    public void wireUpConfig() {
+    @BeforeEach
+    void wireUpConfig() {
         when(ruleFactory.getGenerationConfig()).thenReturn(config);
     }
 
     @Test
-    public void applyGeneratesString() {
+    void applyGeneratesString() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -63,7 +64,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesDate() {
+    void applyGeneratesDate() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -84,7 +85,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesInteger() {
+    void applyGeneratesInteger() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -97,7 +98,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerPrimitive() {
+    void applyGeneratesIntegerPrimitive() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -112,7 +113,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeIntegerPrimitive() {
+    void applyGeneratesIntegerUsingJavaTypeIntegerPrimitive() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -128,7 +129,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesBigInteger() {
+    void applyGeneratesBigInteger() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -143,7 +144,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesBigIntegerOverridingLong() {
+    void applyGeneratesBigIntegerOverridingLong() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -160,7 +161,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesBigDecimal() {
+    void applyGeneratesBigDecimal() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -175,7 +176,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesBigDecimalOverridingDouble() {
+    void applyGeneratesBigDecimalOverridingDouble() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -191,9 +192,8 @@ public class TypeRuleTest {
         assertThat(result.fullName(), is(BigDecimal.class.getName()));
     }
 
-
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeInteger() {
+    void applyGeneratesIntegerUsingJavaTypeInteger() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -209,7 +209,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeLongPrimitive() {
+    void applyGeneratesIntegerUsingJavaTypeLongPrimitive() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -225,7 +225,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeLong() {
+    void applyGeneratesIntegerUsingJavaTypeLong() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -241,7 +241,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeLongPrimitiveWhenMaximumGreaterThanIntegerMax() {
+    void applyGeneratesIntegerUsingJavaTypeLongPrimitiveWhenMaximumGreaterThanIntegerMax() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -257,7 +257,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeLongWhenMaximumGreaterThanIntegerMax() {
+    void applyGeneratesIntegerUsingJavaTypeLongWhenMaximumGreaterThanIntegerMax() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -273,7 +273,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeLongPrimitiveWhenMaximumLessThanIntegerMin() {
+    void applyGeneratesIntegerUsingJavaTypeLongPrimitiveWhenMaximumLessThanIntegerMin() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -289,7 +289,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeLongWhenMaximumLessThanIntegerMin() {
+    void applyGeneratesIntegerUsingJavaTypeLongWhenMaximumLessThanIntegerMin() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -305,7 +305,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeLongPrimitiveWhenMinimumLessThanIntegerMin() {
+    void applyGeneratesIntegerUsingJavaTypeLongPrimitiveWhenMinimumLessThanIntegerMin() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -321,7 +321,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeLongWhenMinimumLessThanIntegerMin() {
+    void applyGeneratesIntegerUsingJavaTypeLongWhenMinimumLessThanIntegerMin() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -337,7 +337,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeLongPrimitiveWhenMinimumGreaterThanIntegerMax() {
+    void applyGeneratesIntegerUsingJavaTypeLongPrimitiveWhenMinimumGreaterThanIntegerMax() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -353,7 +353,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeLongWhenMinimumGreaterThanIntegerMax() {
+    void applyGeneratesIntegerUsingJavaTypeLongWhenMinimumGreaterThanIntegerMax() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -369,7 +369,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesIntegerUsingJavaTypeBigInteger() {
+    void applyGeneratesIntegerUsingJavaTypeBigInteger() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -383,7 +383,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesNumber() {
+    void applyGeneratesNumber() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -398,7 +398,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesNumberPrimitive() {
+    void applyGeneratesNumberPrimitive() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -414,7 +414,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesNumberUsingJavaTypeFloatPrimitive() {
+    void applyGeneratesNumberUsingJavaTypeFloatPrimitive() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -430,7 +430,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesNumberUsingJavaTypeFloat() {
+    void applyGeneratesNumberUsingJavaTypeFloat() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -446,7 +446,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesNumberUsingJavaTypeDoublePrimitive() {
+    void applyGeneratesNumberUsingJavaTypeDoublePrimitive() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -462,7 +462,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesNumberUsingJavaTypeDouble() {
+    void applyGeneratesNumberUsingJavaTypeDouble() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -478,7 +478,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesNumberUsingJavaTypeBigDecimal() {
+    void applyGeneratesNumberUsingJavaTypeBigDecimal() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -492,7 +492,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesBoolean() {
+    void applyGeneratesBoolean() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -505,7 +505,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesBooleanPrimitive() {
+    void applyGeneratesBooleanPrimitive() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -520,7 +520,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesAnyAsObject() {
+    void applyGeneratesAnyAsObject() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -533,7 +533,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesNullAsObject() {
+    void applyGeneratesNullAsObject() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -546,25 +546,26 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyGeneratesArray() {
+    void applyGeneratesArray() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
         ObjectNode objectNode = new ObjectMapper().createObjectNode();
         objectNode.put("type", "array");
 
+        Schema mockSchema = mock(Schema.class);
         JClass mockArrayType = mock(JClass.class);
         ArrayRule mockArrayRule = mock(ArrayRule.class);
-        when(mockArrayRule.apply("fooBar", objectNode, null, jpackage, null)).thenReturn(mockArrayType);
+        when(mockArrayRule.apply("fooBar", objectNode, null, jpackage, mockSchema)).thenReturn(mockArrayType);
         when(ruleFactory.getArrayRule()).thenReturn(mockArrayRule);
 
-        JType result = rule.apply("fooBar", objectNode, null, jpackage, null);
+        JType result = rule.apply("fooBar", objectNode, null, jpackage, mockSchema);
 
         assertThat(result, is(mockArrayType));
     }
 
     @Test
-    public void applyGeneratesCustomObject() {
+    void applyGeneratesCustomObject() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -582,7 +583,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyChoosesObjectOnUnrecognizedType() {
+    void applyChoosesObjectOnUnrecognizedType() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 
@@ -596,7 +597,7 @@ public class TypeRuleTest {
     }
 
     @Test
-    public void applyDefaultsToTypeAnyObject() {
+    void applyDefaultsToTypeAnyObject() {
 
         JPackage jpackage = new JCodeModel()._package(getClass().getPackage().getName());
 

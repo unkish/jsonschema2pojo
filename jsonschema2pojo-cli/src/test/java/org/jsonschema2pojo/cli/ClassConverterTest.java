@@ -16,34 +16,35 @@
 
 package org.jsonschema2pojo.cli;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.jsonschema2pojo.Annotator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.beust.jcommander.ParameterException;
 
-public class ClassConverterTest {
+class ClassConverterTest {
 
-    private ClassConverter converter = new ClassConverter("--custom-annotator");
+    private final ClassConverter converter = new ClassConverter("--custom-annotator");
 
     @Test
     @SuppressWarnings("unchecked")
-    public void classIsCreatedFromFullyQualifiedClassName() {
+    void classIsCreatedFromFullyQualifiedClassName() {
         Class<Annotator> clazz = converter.convert(Annotator.class.getName());
 
         assertThat(clazz, is(equalTo(Annotator.class)));
     }
 
-    @Test(expected = ParameterException.class)
-    public void invalidClassNameThrowsParameterException() {
-        converter.convert("some garbage.name");
+    @Test
+    void invalidClassNameThrowsParameterException() {
+        assertThrows(ParameterException.class, () -> converter.convert("some garbage.name"));
     }
 
-    @Test(expected = ParameterException.class)
-    public void nullValueThrowsParameterException() {
-        converter.convert(null);
+    @Test
+    void nullValueThrowsParameterException() {
+        assertThrows(ParameterException.class, () -> converter.convert(null));
     }
 
 }

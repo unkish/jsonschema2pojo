@@ -21,36 +21,35 @@ import static org.hamcrest.Matchers.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 
 import org.jsonschema2pojo.InclusionLevel;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class ArgumentsTest {
+class ArgumentsTest {
 
     private static final PrintStream SYSTEM_OUT = System.out;
     private static final PrintStream SYSTEM_ERR = System.err;
     private final ByteArrayOutputStream systemOutCapture = new ByteArrayOutputStream();
     private final ByteArrayOutputStream systemErrCapture = new ByteArrayOutputStream();
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         System.setOut(new PrintStream(systemOutCapture));
         System.setErr(new PrintStream(systemErrCapture));
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         System.setOut(SYSTEM_OUT);
         System.setErr(SYSTEM_ERR);
     }
 
     @Test
-    public void parseRecognisesValidArguments() {
+    void parseRecognisesValidArguments() {
         ArgsForTest args = (ArgsForTest) new ArgsForTest().parse(new String[] {
                 "--source", "/home/source", "--target", "/home/target", "--disable-getters", "--package", "mypackage",
                 "--generate-builders", "--use-primitives", "--omit-hashcode-and-equals", "--omit-tostring", "--include-dynamic-accessors",
@@ -75,7 +74,7 @@ public class ArgumentsTest {
     }
 
     @Test
-    public void parseRecognisesShorthandArguments() {
+    void parseRecognisesShorthandArguments() {
         ArgsForTest args = (ArgsForTest) new ArgsForTest().parse(new String[] {
                 "-s", "/home/source", "-t", "/home/target", "-p", "mypackage", "-b", "-P", "-E", "-S", "-ida", "-idg", "-ids", "-idb", "-il", "ALWAYS"
         });
@@ -96,7 +95,7 @@ public class ArgumentsTest {
     }
 
     @Test
-    public void parserAcceptsHyphenWordDelimiter() {
+    void parserAcceptsHyphenWordDelimiter() {
         ArgsForTest args = (ArgsForTest) new ArgsForTest().parse(new String[] {
                 "-s", "/home/source", "-t", "/home/target", "--word-delimiters", "-"
         });
@@ -105,7 +104,7 @@ public class ArgumentsTest {
     }
 
     @Test
-    public void allOptionalArgsCanBeOmittedAndDefaultsPrevail() {
+    void allOptionalArgsCanBeOmittedAndDefaultsPrevail() {
         ArgsForTest args = (ArgsForTest) new ArgsForTest().parse(new String[] {
                 "--source", "/home/source", "--target", "/home/target"
         });
@@ -127,7 +126,7 @@ public class ArgumentsTest {
     }
 
     @Test
-    public void missingArgsCausesHelp() throws IOException {
+    void missingArgsCausesHelp() {
         ArgsForTest args = (ArgsForTest) new ArgsForTest().parse(new String[] {});
 
         assertThat(args.status, is(1));
@@ -137,7 +136,7 @@ public class ArgumentsTest {
     }
 
     @Test
-    public void requestingHelpCausesHelp() throws IOException {
+    void requestingHelpCausesHelp() {
         ArgsForTest args = (ArgsForTest) new ArgsForTest().parse(new String[] { "--help" });
 
         assertThat(args.status, is(notNullValue()));
@@ -149,14 +148,14 @@ public class ArgumentsTest {
     }
 
     private static class ArgsForTest extends Arguments {
-        protected Integer status;
+        Integer status;
 
         @Override
         protected void exit(int status) {
             this.status = status;
         }
 
-        protected boolean didExit() {
+        boolean didExit() {
             return (status != null);
         }
     }

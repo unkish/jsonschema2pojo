@@ -16,26 +16,26 @@
 
 package org.jsonschema2pojo.util;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import org.jsonschema2pojo.DefaultGenerationConfig;
 import org.jsonschema2pojo.GenerationConfig;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.codemodel.JCodeModel;
 
-public class NameHelperTest {
+class NameHelperTest {
 
     private static final ObjectNode NODE = JsonNodeFactory.instance.objectNode();
 
     private final NameHelper nameHelper = new NameHelper(new DefaultGenerationConfig());
 
     @Test
-    public void testGetterNamedCorrectly() {
+    void testGetterNamedCorrectly() {
         assertThat(nameHelper.getGetterName("foo", new JCodeModel().BOOLEAN, NODE), is("isFoo"));
         assertThat(nameHelper.getGetterName("foo", new JCodeModel().INT, NODE), is("getFoo"));
         assertThat(nameHelper.getGetterName("oAuth2State", new JCodeModel().INT, NODE), is("getoAuth2State"));
@@ -43,37 +43,37 @@ public class NameHelperTest {
     }
 
     @Test
-    public void testSetterNamedCorrectly() {
+    void testSetterNamedCorrectly() {
         assertThat(nameHelper.getSetterName("foo", NODE), is("setFoo"));
         assertThat(nameHelper.getSetterName("oAuth2State", NODE), is("setoAuth2State"));
         assertThat(nameHelper.getSetterName("URL", NODE), is("setUrl"));
     }
 
     @Test
-    public void testBuilderNamedCorrectly() {
+    void testBuilderNamedCorrectly() {
         assertThat(nameHelper.getBuilderName("foo", NODE), is("withFoo"));
         assertThat(nameHelper.getBuilderName("oAuth2State", NODE), is("withoAuth2State"));
         assertThat(nameHelper.getBuilderName("URL", NODE), is("withUrl"));
     }
 
     @Test
-    public void testClassNameCorrectly() {
+    void testClassNameCorrectly() {
         assertThat(nameHelper.getClassName("foo", NODE), is("foo"));
         assertThat(nameHelper.getClassName("foo", node("title", "bar")), is("foo"));
         assertThat(nameHelper.getClassName("foo", node("javaName", "bar")), is("bar"));
         assertThat(nameHelper.getClassName("foo", node("javaName", "bar").put("title", "abc")), is("bar"));
 
         // TITLE_ATTRIBUTE
-        NameHelper nameHelper = helper(true);
+        NameHelper nameHelper = helperWithUseTitleAsClassname();
         assertThat(nameHelper.getClassName("foo", node("title", "bar")), is("Bar"));
         assertThat(nameHelper.getClassName("foo", node("title", "i am bar")), is("IAmBar"));
         assertThat(nameHelper.getClassName("foo", node("javaName", "bar")), is("bar"));
         assertThat(nameHelper.getClassName("foo", node("javaName", "bar").put("title", "abc")), is("bar"));
     }
 
-    private NameHelper helper(boolean useTitleAsClassname) {
+    private NameHelper helperWithUseTitleAsClassname() {
         GenerationConfig config = mock(GenerationConfig.class);
-        when(config.isUseTitleAsClassname()).thenReturn(useTitleAsClassname);
+        when(config.isUseTitleAsClassname()).thenReturn(true);
         return new NameHelper(config);
     }
 

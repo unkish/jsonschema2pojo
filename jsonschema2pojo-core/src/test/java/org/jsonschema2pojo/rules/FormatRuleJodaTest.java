@@ -17,8 +17,8 @@
 package org.jsonschema2pojo.rules;
 
 import static java.util.Arrays.*;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import java.util.Collection;
@@ -29,48 +29,37 @@ import org.joda.time.LocalTime;
 import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.NoopAnnotator;
 import org.jsonschema2pojo.SchemaStore;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.sun.codemodel.JCodeModel;
 import com.sun.codemodel.JType;
 
-@RunWith(Parameterized.class)
-public class FormatRuleJodaTest {
+class FormatRuleJodaTest {
 
-    private GenerationConfig config = mock(GenerationConfig.class);
+    private final GenerationConfig config = mock(GenerationConfig.class);
     private FormatRule rule;
 
-    private final String formatValue;
-    private final Class<?> expectedType;
-
-    @Parameters
-    public static Collection<Object[]> data() {
+    static Collection<Object[]> data() {
         return asList(new Object[][] {
                 { "date-time", DateTime.class },
                 { "date", LocalDate.class },
                 { "time", LocalTime.class }});
     }
 
-    public FormatRuleJodaTest(String formatValue, Class<?> expectedType) {
-        this.formatValue = formatValue;
-        this.expectedType = expectedType;
-    }
-
-    @Before
-    public void setupConfig() {
+    @BeforeEach
+    void setupConfig() {
         when(config.isUseJodaLocalTimes()).thenReturn(true);
         when(config.isUseJodaLocalDates()).thenReturn(true);
         when(config.isUseJodaDates()).thenReturn(true);
         rule = new FormatRule(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()));
     }
 
-    @Test
-    public void applyGeneratesTypeFromFormatValue() {
+    @ParameterizedTest
+    @MethodSource("data")
+    void applyGeneratesTypeFromFormatValue(String formatValue, Class<?> expectedType) {
         TextNode formatNode = TextNode.valueOf(formatValue);
 
         JType result = rule.apply("fooBar", formatNode, null, new JCodeModel().ref(String.class), null);

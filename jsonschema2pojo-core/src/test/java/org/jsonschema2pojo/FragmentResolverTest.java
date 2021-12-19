@@ -16,21 +16,22 @@
 
 package org.jsonschema2pojo;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-public class FragmentResolverTest {
+class FragmentResolverTest {
 
-    private FragmentResolver resolver = new FragmentResolver();
+    private final FragmentResolver resolver = new FragmentResolver();
 
     @Test
-    public void hashResolvesToRoot() {
+    void hashResolvesToRoot() {
 
         ObjectNode root = new ObjectMapper().createObjectNode();
 
@@ -43,7 +44,7 @@ public class FragmentResolverTest {
     }
 
     @Test
-    public void slashDelimitedWordsResolveToChildNodes() {
+    void slashDelimitedWordsResolveToChildNodes() {
 
         ObjectNode root = new ObjectMapper().createObjectNode();
 
@@ -86,7 +87,7 @@ public class FragmentResolverTest {
     }
 
     @Test
-    public void pathCanReferToArrayContentsByIndex() {
+    void pathCanReferToArrayContentsByIndex() {
 
         ObjectNode root = new ObjectMapper().createObjectNode();
 
@@ -104,7 +105,7 @@ public class FragmentResolverTest {
     }
 
     @Test
-    public void pathCanReferToArrayContentsAtTheDocumentRoot() {
+    void pathCanReferToArrayContentsAtTheDocumentRoot() {
         ArrayNode root = new ObjectMapper().createArrayNode();
 
         root.add(root.objectNode());
@@ -117,25 +118,23 @@ public class FragmentResolverTest {
 
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void missingPathThrowsIllegalArgumentException() {
+    @Test
+    void missingPathThrowsIllegalArgumentException() {
 
         ObjectNode root = new ObjectMapper().createObjectNode();
 
-        resolver.resolve(root, "#/a/b/c", "#/.");
-
+        assertThrows(IllegalArgumentException.class, () -> resolver.resolve(root, "#/a/b/c", "#/."));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void attemptToUsePropertyNameOnArrayNodeThrowsIllegalArgumentException() {
+    @Test
+    void attemptToUsePropertyNameOnArrayNodeThrowsIllegalArgumentException() {
 
         ObjectNode root = new ObjectMapper().createObjectNode();
 
         ArrayNode a = root.arrayNode();
         root.set("a", a);
 
-        resolver.resolve(root, "#/a/b", "#/.");
-
+        assertThrows(IllegalArgumentException.class, () -> resolver.resolve(root, "#/a/b", "#/."));
     }
 
 }
