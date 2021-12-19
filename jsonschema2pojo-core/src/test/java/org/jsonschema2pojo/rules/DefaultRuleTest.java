@@ -24,10 +24,8 @@ import java.util.Set;
 import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.NoopAnnotator;
 import org.jsonschema2pojo.SchemaStore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -39,21 +37,17 @@ import com.sun.codemodel.JFormatter;
 import com.sun.codemodel.JMod;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(Parameterized.class)
 public class DefaultRuleTest {
 
     private final GenerationConfig config = mock(GenerationConfig.class);
     private final DefaultRule rule = new DefaultRule(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()));
 
-    private final Class<?> fieldTypeClass;
-
-    @Parameters
     public static Collection<Object[]> data() {
         return asList(new Object[][] {
                 { Set.class },
@@ -61,12 +55,9 @@ public class DefaultRuleTest {
         });
     }
 
-    public DefaultRuleTest(Class<?> fieldTypeClass) {
-        this.fieldTypeClass = fieldTypeClass;
-    }
-
-    @Test
-    public void whenIsInitializeCollections_false_applyDoesNotInitializeField() throws JClassAlreadyExistsException {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void whenIsInitializeCollections_false_applyDoesNotInitializeField(Class<?> fieldTypeClass) throws JClassAlreadyExistsException {
         final String fieldName = "fieldName";
         when(config.isInitializeCollections()).thenReturn(false);
 
@@ -79,8 +70,9 @@ public class DefaultRuleTest {
         assertThat(sw.toString(), is(String.format("%s<%s> %s", fieldTypeClass.getName(), Object.class.getName(), fieldName)));
     }
 
-    @Test
-    public void whenIsInitializeCollections_true_applyInitializesField() throws JClassAlreadyExistsException {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void whenIsInitializeCollections_true_applyInitializesField(Class<?> fieldTypeClass) throws JClassAlreadyExistsException {
         when(config.isInitializeCollections()).thenReturn(true);
 
         JDefinedClass jclass = new JCodeModel()._class("org.jsonschema2pojo.rules.ExampleClass");

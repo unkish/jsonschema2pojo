@@ -17,7 +17,7 @@
 package org.jsonschema2pojo.rules;
 
 import static java.util.Arrays.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.lang.annotation.Annotation;
@@ -31,11 +31,12 @@ import java.util.stream.Stream;
 import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.NoopAnnotator;
 import org.jsonschema2pojo.SchemaStore;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -49,14 +50,10 @@ import jakarta.validation.constraints.Size;
 /**
  * Tests {@link MinItemsMaxItemsRuleTest}
  */
-@RunWith(Parameterized.class)
 public class MinItemsMaxItemsRuleTest {
 
-    private final boolean isApplicable;
     private MinItemsMaxItemsRule rule;
-    private final Class<?> fieldClass;
-    private final boolean useJakartaValidation;
-    private final Class<? extends Annotation> sizeClass;
+    private Class<? extends Annotation> sizeClass;
     @Mock
     private GenerationConfig config;
     @Mock
@@ -68,7 +65,6 @@ public class MinItemsMaxItemsRuleTest {
     @Mock
     private JAnnotationUse annotation;
 
-    @Parameterized.Parameters
     public static Collection<Object[]> data() {
         return asList(new Object[][] {
                 { true, String.class },
@@ -86,22 +82,21 @@ public class MinItemsMaxItemsRuleTest {
                 .collect(Collectors.toList());
     }
 
-    public MinItemsMaxItemsRuleTest(boolean isApplicable, Class<?> fieldClass, boolean useJakartaValidation) {
-        this.isApplicable = isApplicable;
-        this.fieldClass = fieldClass;
-        this.useJakartaValidation = useJakartaValidation;
+    private void setUpJakartaValidationAndAnnotationClasses(boolean useJakartaValidation) {
+        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
         this.sizeClass = useJakartaValidation ? Size.class : javax.validation.constraints.Size.class;
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         rule = new MinItemsMaxItemsRule(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()));
-        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
     }
 
-    @Test
-    public void testMinLength() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMinLength(boolean isApplicable, Class<?> fieldClass, boolean useJakartaValidation) {
+        setUpJakartaValidationAndAnnotationClasses(useJakartaValidation);
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
         final int minValue = new Random().nextInt();
         when(subNode.asInt()).thenReturn(minValue);
@@ -118,8 +113,10 @@ public class MinItemsMaxItemsRuleTest {
         verify(annotation, never()).param(eq("max"), anyString());
     }
 
-    @Test
-    public void testMaxLength() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMaxLength(boolean isApplicable, Class<?> fieldClass, boolean useJakartaValidation) {
+        setUpJakartaValidationAndAnnotationClasses(useJakartaValidation);
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
         final int maxValue = new Random().nextInt();
         when(subNode.asInt()).thenReturn(maxValue);
@@ -136,8 +133,10 @@ public class MinItemsMaxItemsRuleTest {
         verify(annotation, never()).param(eq("min"), anyInt());
     }
 
-    @Test
-    public void testMaxAndMinLength() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMaxAndMinLength(boolean isApplicable, Class<?> fieldClass, boolean useJakartaValidation) {
+        setUpJakartaValidationAndAnnotationClasses(useJakartaValidation);
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
         final int minValue = new Random().nextInt();
         final int maxValue = new Random().nextInt();
@@ -159,8 +158,10 @@ public class MinItemsMaxItemsRuleTest {
         verify(annotation, times(isApplicable ? 1 : 0)).param("max", maxValue);
     }
 
-    @Test
-    public void testMaxAndMinLengthGenericsOnType() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testMaxAndMinLengthGenericsOnType(boolean isApplicable, Class<?> fieldClass, boolean useJakartaValidation) {
+        setUpJakartaValidationAndAnnotationClasses(useJakartaValidation);
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
         final int minValue = new Random().nextInt();
         final int maxValue = new Random().nextInt();
@@ -182,8 +183,10 @@ public class MinItemsMaxItemsRuleTest {
         verify(annotation, times(isApplicable ? 1 : 0)).param("max", maxValue);
     }
 
-    @Test
-    public void testNotUsed() {
+    @ParameterizedTest
+    @MethodSource("data")
+    public void testNotUsed(boolean isApplicable, Class<?> fieldClass, boolean useJakartaValidation) {
+        setUpJakartaValidationAndAnnotationClasses(useJakartaValidation);
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
         when(node.has("minItems")).thenReturn(false);
         when(node.has("maxItems")).thenReturn(false);
@@ -202,7 +205,7 @@ public class MinItemsMaxItemsRuleTest {
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
         assertSame(fieldVar, result);
 
-        verify(fieldVar, never()).annotate(sizeClass);
+        verify(fieldVar, never()).annotate(ArgumentMatchers.<Class<? extends Annotation>>any());
         verify(annotation, never()).param(anyString(), anyInt());
     }
 }

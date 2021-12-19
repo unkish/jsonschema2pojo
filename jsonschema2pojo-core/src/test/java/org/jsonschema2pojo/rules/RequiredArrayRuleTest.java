@@ -26,9 +26,9 @@ import java.util.Collection;
 
 import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.Schema;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -41,27 +41,17 @@ import com.sun.codemodel.JMod;
 
 import jakarta.validation.constraints.NotNull;
 
-@RunWith(Parameterized.class)
 public class RequiredArrayRuleTest {
 
     private static final String TARGET_CLASS_NAME = RequiredArrayRuleTest.class.getName() + ".DummyClass";
 
     private RequiredArrayRule rule = new RequiredArrayRule(new RuleFactory());
 
-    private final boolean useJakartaValidation;
-    private final Class<? extends Annotation> notNullClass;
-
-    @Parameterized.Parameters
     public static Collection<Object[]> data() {
         return asList(new Object[][] {
                 { false, javax.validation.constraints.NotNull.class },
                 { true, NotNull.class }
         });
-    }
-
-    public RequiredArrayRuleTest(boolean useJakartaValidation, Class<? extends Annotation> notNullClass) {
-        this.useJakartaValidation = useJakartaValidation;
-        this.notNullClass = notNullClass;
     }
 
     @Test
@@ -85,9 +75,10 @@ public class RequiredArrayRuleTest {
         assertThat(fooJavaDoc.size(), is(0));
     }
 
-    @Test
-    public void shouldUpdateAnnotations() throws JClassAlreadyExistsException {
-        setupRuleFactoryToIncludeJsr303();
+    @ParameterizedTest
+    @MethodSource("data")
+    public void shouldUpdateAnnotations(boolean useJakartaValidation, Class<? extends Annotation> notNullClass) throws JClassAlreadyExistsException {
+        setupRuleFactoryToIncludeJsr303(useJakartaValidation);
 
         JDefinedClass jclass = new JCodeModel()._class(TARGET_CLASS_NAME);
 
@@ -108,7 +99,7 @@ public class RequiredArrayRuleTest {
         assertThat(fooAnnotations.size(), is(0));
     }
 
-    private void setupRuleFactoryToIncludeJsr303() {
+    private void setupRuleFactoryToIncludeJsr303(boolean useJakartaValidation) {
         GenerationConfig config = mock(GenerationConfig.class);
         when(config.getPropertyWordDelimiters()).thenReturn(new char[] { '-', ' ', '_' });
         RuleFactory ruleFactory = new RuleFactory();

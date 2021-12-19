@@ -17,7 +17,7 @@
 package org.jsonschema2pojo.rules;
 
 import static java.util.Arrays.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import java.lang.annotation.Annotation;
@@ -31,11 +31,12 @@ import java.util.stream.Stream;
 import org.jsonschema2pojo.GenerationConfig;
 import org.jsonschema2pojo.NoopAnnotator;
 import org.jsonschema2pojo.SchemaStore;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -48,14 +49,10 @@ import jakarta.validation.constraints.Pattern;
 /**
  * Tests {@link PatternRuleTest}
  */
-@RunWith(Parameterized.class)
 public class PatternRuleTest {
 
-    private final boolean isApplicable;
     private PatternRule rule;
-    private final Class<?> fieldClass;
-    private final boolean useJakartaValidation;
-    private final Class<? extends Annotation> patternClass;
+    private Class<? extends Annotation> patternClass;
     @Mock
     private GenerationConfig config;
     @Mock
@@ -65,7 +62,6 @@ public class PatternRuleTest {
     @Mock
     private JAnnotationUse annotation;
 
-    @Parameterized.Parameters
     public static Collection<Object[]> data() {
         return asList(new Object[][] {
                 { true, String.class },
@@ -84,22 +80,21 @@ public class PatternRuleTest {
                 .collect(Collectors.toList());
     }
 
-    public PatternRuleTest(boolean isApplicable, Class<?> fieldClass, boolean useJakartaValidation) {
-        this.isApplicable = isApplicable;
-        this.fieldClass = fieldClass;
-        this.useJakartaValidation = useJakartaValidation;
+    private void setUpJakartaValidationAndAnnotationClasses(boolean useJakartaValidation) {
+        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
         this.patternClass = useJakartaValidation ? Pattern.class : javax.validation.constraints.Pattern.class;
     }
 
-    @Before
+    @BeforeEach
     public void setUp() {
         MockitoAnnotations.initMocks(this);
         rule = new PatternRule(new RuleFactory(config, new NoopAnnotator(), new SchemaStore()));
-        when(config.isUseJakartaValidation()).thenReturn(useJakartaValidation);
     }
 
-    @Test
-    public void testRegex() {
+    @ParameterizedTest
+    @MethodSource("data")
+    void testRegex(boolean isApplicable, Class<?> fieldClass, boolean useJakartaValidation) {
+        setUpJakartaValidationAndAnnotationClasses(useJakartaValidation);
         when(config.isIncludeJsr303Annotations()).thenReturn(true);
         final String patternValue = "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$";
 
@@ -120,7 +115,7 @@ public class PatternRuleTest {
         JFieldVar result = rule.apply("node", node, null, fieldVar, null);
         assertSame(fieldVar, result);
 
-        verify(fieldVar, never()).annotate(patternClass);
+        verify(fieldVar, never()).annotate(ArgumentMatchers.<Class<? extends Annotation>>any());
         verify(annotation, never()).param(anyString(), anyString());
     }
 

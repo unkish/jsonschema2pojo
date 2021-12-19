@@ -16,9 +16,9 @@
 
 package org.jsonschema2pojo.integration.config;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.jsonschema2pojo.integration.util.CodeGenerationHelper.*;
-import static org.junit.Assert.*;
 
 import java.lang.reflect.Member;
 import java.lang.reflect.Modifier;
@@ -33,11 +33,9 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * Checks general properties of includeAccessors and different configurations.
@@ -46,13 +44,11 @@ import org.junit.runners.Parameterized.Parameters;
  *
  */
 @SuppressWarnings({ "rawtypes" })
-@RunWith(Parameterized.class)
 public class IncludeAccessorsPropertiesIT {
     public static final String PACKAGE = "com.example";
     public static final String PRIMITIVE_JSON = "/schema/properties/primitiveProperties.json";
     public static final String PRIMITIVE_TYPE = "com.example.PrimitiveProperties";
 
-    @Parameters
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][] {
             { PRIMITIVE_JSON, PRIMITIVE_TYPE, config() },
@@ -61,47 +57,39 @@ public class IncludeAccessorsPropertiesIT {
         });
     }
 
-    @Rule public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
 
-    private String path;
-    private String typeName;
-    private Map<String, Object> includeAccessorsFalse;
-    private Map<String, Object> includeAccessorsTrue;
-
-    public IncludeAccessorsPropertiesIT(String path, String typeName, Map<String, Object> config) {
-        this.path = path;
-        this.typeName = typeName;
-        this.includeAccessorsFalse = configWithIncludeAccessors(config, false);
-        this.includeAccessorsTrue = configWithIncludeAccessors(config, true);
-    }
-
-    @Test
-    public void noGettersOrSettersWhenFalse() throws ClassNotFoundException, SecurityException {
-        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(path, PACKAGE, includeAccessorsFalse);
+    @ParameterizedTest(name = "{2}")
+    @MethodSource("parameters")
+    public void noGettersOrSettersWhenFalse(String path, String typeName, Map<String, Object> config) throws ClassNotFoundException, SecurityException {
+        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(path, PACKAGE, configWithIncludeAccessors(config, false));
         Class generatedType = resultsClassLoader.loadClass(typeName);
 
         assertThat("getters and setters should not exist", generatedType.getDeclaredMethods(), everyItemInArray(anyOf(methodWhitelist(), not(fieldGetterOrSetter()))));
     }
 
-    @Test
-    public void hasGettersOrSettersWhenTrue() throws ClassNotFoundException, SecurityException {
-        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(path, PACKAGE, includeAccessorsTrue);
+    @ParameterizedTest(name = "{2}")
+    @MethodSource("parameters")
+    public void hasGettersOrSettersWhenTrue(String path, String typeName, Map<String, Object> config) throws ClassNotFoundException, SecurityException {
+        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(path, PACKAGE, configWithIncludeAccessors(config, true));
         Class generatedType = resultsClassLoader.loadClass(typeName);
 
         assertThat("a getter or setter should be found.", generatedType.getDeclaredMethods(), hasItemInArray(allOf(not(methodWhitelist()), fieldGetterOrSetter())));
     }
 
-    @Test
-    public void onlyHasPublicInstanceFieldsWhenFalse() throws ClassNotFoundException, SecurityException {
-        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(path, PACKAGE, includeAccessorsFalse);
+    @ParameterizedTest(name = "{2}")
+    @MethodSource("parameters")
+    public void onlyHasPublicInstanceFieldsWhenFalse(String path, String typeName, Map<String, Object> config) throws ClassNotFoundException, SecurityException {
+        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(path, PACKAGE, configWithIncludeAccessors(config, false));
         Class generatedType = resultsClassLoader.loadClass(typeName);
 
         assertThat("only public instance fields exist", generatedType.getDeclaredFields(), everyItemInArray(anyOf(hasModifiers(Modifier.STATIC), fieldWhitelist(), hasModifiers(Modifier.PUBLIC))));
     }
 
-    @Test
-    public void noPublicInstanceFieldsWhenTrue() throws ClassNotFoundException, SecurityException {
-        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(path, PACKAGE, includeAccessorsTrue);
+    @ParameterizedTest(name = "{2}")
+    @MethodSource("parameters")
+    public void noPublicInstanceFieldsWhenTrue(String path, String typeName, Map<String, Object> config) throws ClassNotFoundException, SecurityException {
+        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(path, PACKAGE, configWithIncludeAccessors(config, true));
         Class generatedType = resultsClassLoader.loadClass(typeName);
 
         assertThat("only public instance fields exist", generatedType.getDeclaredFields(), everyItemInArray(anyOf(not(hasModifiers(Modifier.PUBLIC)), fieldWhitelist())));

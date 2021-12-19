@@ -35,24 +35,20 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-@RunWith(Parameterized.class)
 public class FormatIT {
-    @ClassRule public static Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension public static Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule().classRule();
 
     private static Class<?> classWithFormattedProperties;
 
-    @Parameters(name="{0}")
     public static List<Object[]> data() {
         return asList(new Object[][] {
             /* { propertyName, expectedType, jsonValue, javaValue } */
@@ -75,19 +71,7 @@ public class FormatIT {
             { "stringAsEmail", String.class, "a@b.com", "a@b.com" } });
     }
 
-    private String propertyName;
-    private Class<?> expectedType;
-    private Object jsonValue;
-    private Object javaValue;
-
-    public FormatIT(String propertyName, Class<?> expectedType, Object jsonValue, Object javaValue) {
-        this.propertyName = propertyName;
-        this.expectedType = expectedType;
-        this.jsonValue = jsonValue;
-        this.javaValue = javaValue;
-    }
-
-    @BeforeClass
+    @BeforeAll
     public static void generateClasses() throws ClassNotFoundException {
 
         Map<String,String> formatMapping = new HashMap<String,String>() {{
@@ -100,17 +84,19 @@ public class FormatIT {
 
     }
 
-    @Test
-    public void formatValueProducesExpectedType() throws IntrospectionException {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("data")
+    public void formatValueProducesExpectedType(String propertyName, Class<?> expectedType) throws IntrospectionException {
 
         Method getter = new PropertyDescriptor(propertyName, classWithFormattedProperties).getReadMethod();
 
-        assertThat(getter.getReturnType().getName(), is(this.expectedType.getName()));
+        assertThat(getter.getReturnType().getName(), is(expectedType.getName()));
 
     }
 
-    @Test
-    public void valueCanBeSerializedAndDeserialized() throws IOException, IntrospectionException, IllegalAccessException, InvocationTargetException {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("data")
+    public void valueCanBeSerializedAndDeserialized(String propertyName, Class<?> expectedType, Object jsonValue, Object javaValue) throws IOException, IntrospectionException, IllegalAccessException, InvocationTargetException {
 
         ObjectMapper objectMapper = new ObjectMapper();
 

@@ -16,9 +16,9 @@
 
 package org.jsonschema2pojo.integration.config;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.jsonschema2pojo.integration.util.CodeGenerationHelper.*;
-import static org.junit.Assert.*;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -28,13 +28,11 @@ import java.util.Map;
 
 import org.hamcrest.Matcher;
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(Parameterized.class)
 public class InitializeCollectionsIT {
     
     @Parameters(name="{0}")
@@ -50,20 +48,11 @@ public class InitializeCollectionsIT {
         });
     }
 
-    @Rule public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
 
-    private Map<String, Object> config;
-    private Matcher<Object> resultMatcher;
-    private String getterName;
-    
-    public InitializeCollectionsIT(String label, Map<String, Object> config, String getterName, Matcher<Object> resultMatcher) {
-        this.config = config;
-        this.getterName = getterName;
-        this.resultMatcher = resultMatcher;
-    }
-
-    @Test
-    public void correctResult() throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("parameters")
+    public void correctResult(String label, Map<String, Object> config, String getterName, Matcher<Object> resultMatcher) throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, NoSuchMethodException {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/properties/initializeCollectionProperties.json", "com.example", config);
 

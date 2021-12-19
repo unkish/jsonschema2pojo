@@ -16,11 +16,10 @@
 
 package org.jsonschema2pojo.integration.config;
 
-import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.*;
 import static org.jsonschema2pojo.integration.util.CodeGenerationHelper.*;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.beans.ConstructorProperties;
 import java.lang.annotation.Annotation;
@@ -28,11 +27,11 @@ import java.lang.reflect.Constructor;
 import java.util.StringJoiner;
 
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class IncludeConstructorPropertiesAnnotationIT {
-  @Rule
+  @RegisterExtension
   public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
 
   private String[] expectedValueForAllValuesConstructor = { "x", "y", "z" };

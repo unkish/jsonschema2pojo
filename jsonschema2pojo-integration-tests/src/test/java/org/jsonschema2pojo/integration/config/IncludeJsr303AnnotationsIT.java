@@ -17,9 +17,9 @@
 package org.jsonschema2pojo.integration.config;
 
 import static java.util.Arrays.*;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.jsonschema2pojo.integration.util.CodeGenerationHelper.*;
-import static org.junit.Assert.*;
 
 import java.beans.PropertyDescriptor;
 import java.io.File;
@@ -37,20 +37,17 @@ import org.apache.bval.jsr303.ApacheValidationProvider;
 import org.hamcrest.Matcher;
 import org.jsonschema2pojo.integration.util.FileSearchMatcher;
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 
 @SuppressWarnings("rawtypes")
-@RunWith(Parameterized.class)
 public class IncludeJsr303AnnotationsIT {
 
-    private final boolean useJakartaValidation;
-    @Rule public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
 
     private static final javax.validation.Validator javaxValidator = javax.validation.Validation.byProvider(ApacheValidationProvider.class)
             .configure()
@@ -58,17 +55,13 @@ public class IncludeJsr303AnnotationsIT {
             .getValidator();
     private static final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
 
-    @Parameterized.Parameters
     public static Collection<Object> data() {
         return asList(true, false);
     }
 
-    public IncludeJsr303AnnotationsIT(boolean useJakartaValidation) {
-        this.useJakartaValidation = useJakartaValidation;
-    }
-
-    @Test
-    public void jsrAnnotationsAreNotIncludedByDefault() {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsrAnnotationsAreNotIncludedByDefault(boolean useJakartaValidation) {
         File outputDirectory = schemaRule.generate("/schema/jsr303/all.json", "com.example",
                 config("useJakartaValidation", useJakartaValidation));
 
@@ -76,8 +69,9 @@ public class IncludeJsr303AnnotationsIT {
         assertThat(outputDirectory, not(containsText(validationPackageName)));
     }
 
-    @Test
-    public void jsrAnnotationsAreNotIncludedWhenSwitchedOff() {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsrAnnotationsAreNotIncludedWhenSwitchedOff(boolean useJakartaValidation) {
         File outputDirectory = schemaRule.generate("/schema/jsr303/all.json", "com.example",
                 config("includeJsr303Annotations", false, "useJakartaValidation", useJakartaValidation));
 
@@ -85,8 +79,9 @@ public class IncludeJsr303AnnotationsIT {
         assertThat(outputDirectory, not(containsText(validationPackageName)));
     }
 
-    @Test
-    public void jsr303DecimalMinValidationIsAddedForSchemaRuleMinimum() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303DecimalMinValidationIsAddedForSchemaRuleMinimum(boolean useJakartaValidation) throws ClassNotFoundException {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/minimum.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
@@ -96,16 +91,17 @@ public class IncludeJsr303AnnotationsIT {
         Object validInstance = createInstanceWithPropertyValue(generatedType, "minimum", 2);
         setInstancePropertyValue(validInstance, "minimumNotConstrained", 1.5);
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         Object invalidInstance = createInstanceWithPropertyValue(generatedType, "minimum", 0);
 
-        assertNumberOfConstraintViolationsOn(invalidInstance, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance, is(1), useJakartaValidation);
 
     }
 
-    @Test
-    public void jsr303DecimalMaxValidationIsAddedForSchemaRuleMaximum() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303DecimalMaxValidationIsAddedForSchemaRuleMaximum(boolean useJakartaValidation) throws ClassNotFoundException {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/maximum.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
@@ -115,16 +111,17 @@ public class IncludeJsr303AnnotationsIT {
         Object validInstance = createInstanceWithPropertyValue(generatedType, "maximum", 8);
         setInstancePropertyValue(validInstance, "maximumNotConstrained", 10.6);
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         Object invalidInstance = createInstanceWithPropertyValue(generatedType, "maximum", 10);
 
-        assertNumberOfConstraintViolationsOn(invalidInstance, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance, is(1), useJakartaValidation);
 
     }
 
-    @Test
-    public void jsr303SizeValidationIsAddedForSchemaRuleMinItems() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303SizeValidationIsAddedForSchemaRuleMinItems(boolean useJakartaValidation) throws ClassNotFoundException {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/minItems.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
@@ -134,16 +131,17 @@ public class IncludeJsr303AnnotationsIT {
         Object validInstance = createInstanceWithPropertyValue(generatedType, "minItems", asList(1, 2, 3, 4, 5, 6));
         setInstancePropertyValue(validInstance, "minItemsNotApplicable", UUID.randomUUID());
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         Object invalidInstance = createInstanceWithPropertyValue(generatedType, "minItems", asList(1, 2, 3));
 
-        assertNumberOfConstraintViolationsOn(invalidInstance, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance, is(1), useJakartaValidation);
 
     }
 
-    @Test
-    public void jsr303SizeValidationIsAddedForSchemaRuleMaxItems() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303SizeValidationIsAddedForSchemaRuleMaxItems(boolean useJakartaValidation) throws ClassNotFoundException {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/maxItems.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
@@ -153,15 +151,16 @@ public class IncludeJsr303AnnotationsIT {
         Object validInstance = createInstanceWithPropertyValue(generatedType, "maxItems", asList(1, 2, 3));
         setInstancePropertyValue(validInstance, "maxItemsNotApplicable", UUID.randomUUID());
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         Object invalidInstance = createInstanceWithPropertyValue(generatedType, "maxItems", asList(1, 2, 3, 4, 5, 6));
 
-        assertNumberOfConstraintViolationsOn(invalidInstance, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance, is(1), useJakartaValidation);
     }
 
-    @Test
-    public void jsr303SizeValidationIsAddedForSchemaRuleMinItemsAndMaxItems() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303SizeValidationIsAddedForSchemaRuleMinItemsAndMaxItems(boolean useJakartaValidation) throws ClassNotFoundException {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/minAndMaxItems.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
@@ -170,20 +169,21 @@ public class IncludeJsr303AnnotationsIT {
 
         Object validInstance = createInstanceWithPropertyValue(generatedType, "minAndMaxItems", asList(1, 2, 3));
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         Object invalidInstance1 = createInstanceWithPropertyValue(generatedType, "minAndMaxItems", Collections.singletonList(1));
 
-        assertNumberOfConstraintViolationsOn(invalidInstance1, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance1, is(1), useJakartaValidation);
 
         Object invalidInstance2 = createInstanceWithPropertyValue(generatedType, "minAndMaxItems", asList(1, 2, 3, 4, 5));
 
-        assertNumberOfConstraintViolationsOn(invalidInstance2, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance2, is(1), useJakartaValidation);
 
     }
 
-    @Test
-    public void jsr303PatternValidationIsAddedForSchemaRulePattern() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303PatternValidationIsAddedForSchemaRulePattern(boolean useJakartaValidation) throws ClassNotFoundException {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/pattern.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
@@ -193,15 +193,16 @@ public class IncludeJsr303AnnotationsIT {
         Object validInstance = createInstanceWithPropertyValue(generatedType, "pattern", "abc123");
         setInstancePropertyValue(validInstance, "patternNotApplicable", UUID.randomUUID());
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         Object invalidInstance = createInstanceWithPropertyValue(generatedType, "pattern", "123abc");
 
-        assertNumberOfConstraintViolationsOn(invalidInstance, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance, is(1), useJakartaValidation);
     }
 
-    @Test
-    public void jsr303NotNullValidationIsAddedForSchemaRuleRequired() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303NotNullValidationIsAddedForSchemaRuleRequired(boolean useJakartaValidation) throws ClassNotFoundException {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/required.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
@@ -210,15 +211,16 @@ public class IncludeJsr303AnnotationsIT {
 
         Object validInstance = createInstanceWithPropertyValue(generatedType, "required", "abc");
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         Object invalidInstance = createInstanceWithPropertyValue(generatedType, "required", null);
 
-        assertNumberOfConstraintViolationsOn(invalidInstance, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance, is(1), useJakartaValidation);
     }
 
-    @Test
-    public void jsr303SizeValidationIsAddedForSchemaRuleMinLength() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303SizeValidationIsAddedForSchemaRuleMinLength(boolean useJakartaValidation) throws ClassNotFoundException {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/minLength.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
@@ -228,15 +230,16 @@ public class IncludeJsr303AnnotationsIT {
         Object validInstance = createInstanceWithPropertyValue(generatedType, "minLength", "Long enough");
         setInstancePropertyValue(validInstance, "minLengthNotApplicable", UUID.randomUUID());
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         Object invalidInstance = createInstanceWithPropertyValue(generatedType, "minLength", "Too short");
 
-        assertNumberOfConstraintViolationsOn(invalidInstance, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance, is(1), useJakartaValidation);
     }
 
-    @Test
-    public void jsr303SizeValidationIsAddedForSchemaRuleMaxLength() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303SizeValidationIsAddedForSchemaRuleMaxLength(boolean useJakartaValidation) throws ClassNotFoundException {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/maxLength.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
@@ -246,15 +249,16 @@ public class IncludeJsr303AnnotationsIT {
         Object validInstance = createInstanceWithPropertyValue(generatedType, "maxLength", "Short");
         setInstancePropertyValue(validInstance, "maxLengthNotApplicable", UUID.randomUUID());
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         Object invalidInstance = createInstanceWithPropertyValue(generatedType, "maxLength", "Tooooo long");
 
-        assertNumberOfConstraintViolationsOn(invalidInstance, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance, is(1), useJakartaValidation);
     }
 
-    @Test
-    public void jsr303DigitsValidationIsAddedForSchemaRuleDigits() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303DigitsValidationIsAddedForSchemaRuleDigits(boolean useJakartaValidation) throws ClassNotFoundException {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/digits.json", "com.example",
                 config("includeJsr303Annotations", true, "useBigDecimals", true, "useJakartaValidation", useJakartaValidation));
@@ -265,37 +269,38 @@ public class IncludeJsr303AnnotationsIT {
         Object validInstance = createInstanceWithPropertyValue(generatedType, "decimal", new BigDecimal("12345.1234567890"));
         setInstancePropertyValue(validInstance, "digitsNotApplicable", Collections.singletonList("12345.12345678901"));
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         // negative value
         validInstance = createInstanceWithPropertyValue(generatedType, "decimal", new BigDecimal("-12345.0123456789"));
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         // zero value
         validInstance = createInstanceWithPropertyValue(generatedType, "decimal", new BigDecimal("0.0"));
 
-        assertNumberOfConstraintViolationsOn(validInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validInstance, is(0), useJakartaValidation);
 
         // too many integer digits
         Object invalidInstance = createInstanceWithPropertyValue(generatedType, "decimal", new BigDecimal("123456.0123456789"));
 
-        assertNumberOfConstraintViolationsOn(invalidInstance, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance, is(1), useJakartaValidation);
 
         // too many fractional digits
         invalidInstance = createInstanceWithPropertyValue(generatedType, "decimal", new BigDecimal("12345.12345678901"));
 
-        assertNumberOfConstraintViolationsOn(invalidInstance, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance, is(1), useJakartaValidation);
 
         // too many integer & fractional digits
         invalidInstance = createInstanceWithPropertyValue(generatedType, "decimal", new BigDecimal("123456.12345678901"));
 
-        assertNumberOfConstraintViolationsOn(invalidInstance, is(1));
+        assertNumberOfConstraintViolationsOn(invalidInstance, is(1), useJakartaValidation);
 
     }
 
-    @Test
-    public void jsr303ValidAnnotationIsAddedForObject() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303ValidAnnotationIsAddedForObject(boolean useJakartaValidation) throws ClassNotFoundException {
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/validObject.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
 
@@ -305,16 +310,17 @@ public class IncludeJsr303AnnotationsIT {
         Object invalidObjectFieldInstance = createInstanceWithPropertyValue(objectFieldType, "childprimitivefield", "Too long");
         Object validObjectInstance = createInstanceWithPropertyValue(validObjectType, "objectfield", invalidObjectFieldInstance);
 
-        assertNumberOfConstraintViolationsOn(validObjectInstance, is(1));
+        assertNumberOfConstraintViolationsOn(validObjectInstance, is(1), useJakartaValidation);
 
         Object validObjectFieldInstance = createInstanceWithPropertyValue(objectFieldType, "childprimitivefield", "OK");
         validObjectInstance = createInstanceWithPropertyValue(validObjectType, "objectfield", validObjectFieldInstance);
 
-        assertNumberOfConstraintViolationsOn(validObjectInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validObjectInstance, is(0), useJakartaValidation);
     }
 
-    @Test
-    public void jsr303ValidAnnotationIsAddedForArray() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303ValidAnnotationIsAddedForArray(boolean useJakartaValidation) throws ClassNotFoundException {
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/validArray.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
 
@@ -327,17 +333,18 @@ public class IncludeJsr303AnnotationsIT {
         objectArrayList.add(objectArrayInstance);
         Object validArrayInstance = createInstanceWithPropertyValue(validArrayType, "objectarray", objectArrayList);
 
-        assertNumberOfConstraintViolationsOn(validArrayInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validArrayInstance, is(0), useJakartaValidation);
 
         Object invalidObjectArrayInstance = createInstanceWithPropertyValue(objectArrayType, "arrayitem", "Too long");
         objectArrayList.add(invalidObjectArrayInstance);
         validArrayInstance = createInstanceWithPropertyValue(validArrayType, "objectarray", objectArrayList);
 
-        assertNumberOfConstraintViolationsOn(validArrayInstance, is(1));
+        assertNumberOfConstraintViolationsOn(validArrayInstance, is(1), useJakartaValidation);
     }
 
-    @Test
-    public void jsr303ValidAnnotationIsAddedForArrayWithRef() throws ClassNotFoundException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jsr303ValidAnnotationIsAddedForArrayWithRef(boolean useJakartaValidation) throws ClassNotFoundException {
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/validArray.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
 
@@ -350,18 +357,19 @@ public class IncludeJsr303AnnotationsIT {
         objectArrayList.add(objectArrayInstance);
         Object validArrayInstance = createInstanceWithPropertyValue(validArrayType, "refarray", objectArrayList);
 
-        assertNumberOfConstraintViolationsOn(validArrayInstance, is(0));
+        assertNumberOfConstraintViolationsOn(validArrayInstance, is(0), useJakartaValidation);
 
         Object invalidObjectArrayInstance = createInstanceWithPropertyValue(refarrayType, "arrayitem", "Too long");
         objectArrayList.add(invalidObjectArrayInstance);
         validArrayInstance = createInstanceWithPropertyValue(validArrayType, "refarray", objectArrayList);
 
-        assertNumberOfConstraintViolationsOn(validArrayInstance, is(1));
+        assertNumberOfConstraintViolationsOn(validArrayInstance, is(1), useJakartaValidation);
     }
 
     @SuppressWarnings("unchecked")
-    @Test
-    public void jar303AnnotationsValidatedForAdditionalProperties() throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    @ParameterizedTest(name = "useJakartaValidation_{0}")
+    @MethodSource("data")
+    public void jar303AnnotationsValidatedForAdditionalProperties(boolean useJakartaValidation) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/jsr303/validAdditionalProperties.json", "com.example",
                 config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
 
@@ -375,13 +383,13 @@ public class IncludeJsr303AnnotationsIT {
         Method setter = parentType.getMethod("setAdditionalProperty", String.class, subPropertyType);
 
         setter.invoke(parent, "maximum", validSubPropertyInstance);
-        assertNumberOfConstraintViolationsOn(parent, is(0));
+        assertNumberOfConstraintViolationsOn(parent, is(0), useJakartaValidation);
 
         setter.invoke(parent, "maximum", invalidSubPropertyInstance);
-        assertNumberOfConstraintViolationsOn(parent, is(1));
+        assertNumberOfConstraintViolationsOn(parent, is(1), useJakartaValidation);
     }
 
-    private void assertNumberOfConstraintViolationsOn(Object instance, Matcher<Integer> matcher) {
+    private void assertNumberOfConstraintViolationsOn(Object instance, Matcher<Integer> matcher, boolean useJakartaValidation) {
         final Set<?> violationsForValidInstance = useJakartaValidation ? validator.validate(instance) : javaxValidator.validate(instance);
         assertThat(violationsForValidInstance.size(), matcher);
     }

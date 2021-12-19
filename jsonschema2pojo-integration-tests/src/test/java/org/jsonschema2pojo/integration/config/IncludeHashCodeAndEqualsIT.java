@@ -17,26 +17,25 @@
 package org.jsonschema2pojo.integration.config;
 
 import static org.jsonschema2pojo.integration.util.CodeGenerationHelper.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
 public class IncludeHashCodeAndEqualsIT {
 
-    @Rule
+    @RegisterExtension
     public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
 
-    @ClassRule
-    public static Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension
+    public static Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule().classRule();
 
     private static ClassLoader resultsClassLoader;
 
-    @BeforeClass
+    @BeforeAll
     public static void generateAndCompileClass() {
         resultsClassLoader = classSchemaRule.generateAndCompile("/schema/hashCodeAndEquals/types.json", "com.example", config("includeAdditionalProperties", false));
     }
@@ -77,10 +76,10 @@ public class IncludeHashCodeAndEqualsIT {
     public void objectWithoutFields() throws Exception {
 
         Class genType = resultsClassLoader.loadClass("com.example.Empty");
-        assertEquals(genType.getDeclaredFields().length, 0);
+        assertEquals(0, genType.getDeclaredFields().length);
 
         genType.getDeclaredMethod("equals", java.lang.Object.class);
-        assertEquals("Should not use super.equals()", genType.newInstance(), genType.newInstance());
+        assertEquals(genType.newInstance(), genType.newInstance(), "Should not use super.equals()");
         assertEquals(genType.newInstance().hashCode(), genType.newInstance().hashCode());
     }
 
@@ -89,10 +88,10 @@ public class IncludeHashCodeAndEqualsIT {
 
         Class genType = resultsClassLoader.loadClass("com.example.ExtendsJavaType");
         assertEquals(genType.getSuperclass(), Parent.class);
-        assertEquals(genType.getDeclaredFields().length, 0);
+        assertEquals(0, genType.getDeclaredFields().length);
 
         genType.getDeclaredMethod("equals", java.lang.Object.class);
-        assertNotEquals("Should use super.equals() because parent is not Object; parent uses Object.equals()", genType.newInstance(), genType.newInstance());
+        assertNotEquals(genType.newInstance(), genType.newInstance(), "Should use super.equals() because parent is not Object; parent uses Object.equals()");
     }
 
     @Test
@@ -100,10 +99,10 @@ public class IncludeHashCodeAndEqualsIT {
 
         Class genType = resultsClassLoader.loadClass("com.example.ExtendsJavaTypeWithEquals");
         assertEquals(genType.getSuperclass(), ParentWithEquals.class);
-        assertEquals(genType.getDeclaredFields().length, 0);
+        assertEquals(0, genType.getDeclaredFields().length);
 
         genType.getDeclaredMethod("equals", java.lang.Object.class);
-        assertEquals("Should use super.equals()", genType.newInstance(), genType.newInstance());
+        assertEquals(genType.newInstance(), genType.newInstance(), "Should use super.equals()");
         assertEquals(genType.newInstance().hashCode(), genType.newInstance().hashCode());
     }
 
@@ -114,7 +113,7 @@ public class IncludeHashCodeAndEqualsIT {
         assertEquals(genType.getSuperclass(), Object.class);
 
         genType.getDeclaredMethod("equals", java.lang.Object.class);
-        assertNotEquals("Should use super.equals() because parent is not java.lang.Object; parent uses Object.equals()", genType.newInstance(), genType.newInstance());
+        assertNotEquals(genType.newInstance(), genType.newInstance(), "Should use super.equals() because parent is not java.lang.Object; parent uses Object.equals()");
     }
 
     @Test

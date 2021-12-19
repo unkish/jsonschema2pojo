@@ -24,8 +24,8 @@ import java.io.File;
 import org.hamcrest.Matchers;
 import org.jsonschema2pojo.integration.util.FileSearchMatcher;
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class IncludeGeneratedAnnotationIT {
 
@@ -33,7 +33,7 @@ public class IncludeGeneratedAnnotationIT {
     private static final String SCHEMA_PATH = "/schema/" + PROP_KEY + "/" + PROP_KEY + ".json";
     private static final String TEST_PACKAGE = "com.example";
 
-    @Rule
+    @RegisterExtension
     public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
 
     @Test

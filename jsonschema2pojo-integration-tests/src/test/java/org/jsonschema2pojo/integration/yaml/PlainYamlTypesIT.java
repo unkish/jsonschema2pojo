@@ -17,9 +17,10 @@
 package org.jsonschema2pojo.integration.yaml;
 
 import static java.util.Arrays.*;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.jsonschema2pojo.integration.util.CodeGenerationHelper.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
@@ -28,9 +29,8 @@ import java.math.BigInteger;
 import java.util.List;
 
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -38,11 +38,8 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class PlainYamlTypesIT {
 
-    @Rule
+    @RegisterExtension
     public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
-
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
 
@@ -76,13 +73,13 @@ public class PlainYamlTypesIT {
         assertThat((BigInteger) generatedType.getMethod("getB").invoke(deserialisedValue), is(new BigInteger("123")));
     }
 
-    @Test(expected = ClassNotFoundException.class)
-    public void simpleTypeAtRootProducesNoJavaTypes() throws ClassNotFoundException {
+    @Test
+    public void simpleTypeAtRootProducesNoJavaTypes() {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/yaml/simpleTypeAsRoot.yaml", "com.example",
                 config("sourceType", "yaml"));
 
-        resultsClassLoader.loadClass("com.example.SimpleTypeAsRoot");
+        assertThrows(ClassNotFoundException.class, () -> resultsClassLoader.loadClass("com.example.SimpleTypeAsRoot"));
 
     }
 
@@ -180,18 +177,19 @@ public class PlainYamlTypesIT {
         // we don't support union types, so we have to pick one
         assertEquals(Integer.class, genType.getMethod("getScalar").getReturnType());
 
-        thrown.expect(InvalidFormatException.class);
-        thrown.expectMessage(startsWith("Cannot deserialize value of type `int` from String \"what\": not a valid `int` value"));
-        OBJECT_MAPPER.readValue(this.getClass().getResourceAsStream("/yaml/simplePropertiesInArrayItem.yaml"), Array.newInstance(genType, 0).getClass());
+        InvalidFormatException thrown = assertThrows(
+                InvalidFormatException.class,
+                () -> OBJECT_MAPPER.readValue(this.getClass().getResourceAsStream("/yaml/simplePropertiesInArrayItem.yaml"), Array.newInstance(genType, 0).getClass()));
+        assertThat(thrown.getMessage(), startsWith("Cannot deserialize value of type `int` from String \"what\": not a valid `int` value"));
     }
 
-    @Test(expected = ClassNotFoundException.class)
-    public void arrayAtRootProducesNoJavaTypes() throws Exception {
+    @Test
+    public void arrayAtRootProducesNoJavaTypes() {
 
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/yaml/arrayAsRoot.yaml", "com.example",
                 config("sourceType", "yaml"));
 
-        resultsClassLoader.loadClass("com.example.ArrayAsRoot");
+        assertThrows(ClassNotFoundException.class, () -> resultsClassLoader.loadClass("com.example.ArrayAsRoot"));
 
     }
 

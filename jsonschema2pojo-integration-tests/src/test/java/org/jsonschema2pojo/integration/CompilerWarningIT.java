@@ -38,11 +38,9 @@ import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.jsonschema2pojo.integration.util.Compiler;
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * <p>Tests looking for warning coming from generated output.</p>
@@ -55,11 +53,9 @@ import org.junit.runners.Parameterized.Parameters;
  * @author Christian Trimble
  *
  */
-@RunWith(Parameterized.class)
 public class CompilerWarningIT {
-  @Rule public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule().captureDiagnostics();
+  @RegisterExtension public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule().captureDiagnostics();
   
-  @Parameters(name="{0}")
   public static Collection<Object[]> parameters() {
     JavaCompiler systemJavaCompiler = Compiler.systemJavaCompiler();
     JavaCompiler eclipseCompiler = Compiler.eclipseCompiler();
@@ -81,20 +77,9 @@ public class CompilerWarningIT {
     });
   }
 
-  private JavaCompiler compiler;
-  private Map<String, Object> config;
-  private String schema;
-  private Matcher<List<Diagnostic<? extends JavaFileObject>>> matcher;
-
-  public CompilerWarningIT(String label, JavaCompiler compiler, Map<String, Object> config, String schema, Matcher<List<Diagnostic<? extends JavaFileObject>>> matcher) {
-    this.compiler = compiler;
-    this.config = config;
-    this.schema = schema;
-    this.matcher = matcher;
-  }
-
-  @Test
-  public void checkWarnings() {
+  @ParameterizedTest(name = "{0}")
+  @MethodSource("parameters")
+  public void checkWarnings(String label, JavaCompiler compiler, Map<String, Object> config, String schema, Matcher<List<Diagnostic<? extends JavaFileObject>>> matcher) {
     schemaRule.generate(schema, "com.example", config);
     schemaRule.compile(compiler, new NullWriter(), new ArrayList<>(), config);
     

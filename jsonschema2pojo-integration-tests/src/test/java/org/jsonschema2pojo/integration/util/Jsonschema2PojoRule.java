@@ -17,9 +17,9 @@
 package org.jsonschema2pojo.integration.util;
 
 import static org.apache.commons.io.FileUtils.*;
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.jsonschema2pojo.integration.util.Compiler.*;
-import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,6 +37,12 @@ import javax.tools.DiagnosticListener;
 import javax.tools.JavaCompiler;
 import javax.tools.JavaFileObject;
 
+import org.apache.commons.lang.StringUtils;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -47,7 +53,7 @@ import org.junit.runners.model.Statement;
  * @author Christian Trimble
  *
  */
-public class Jsonschema2PojoRule implements TestRule {
+public class Jsonschema2PojoRule implements TestRule, AfterAllCallback, AfterEachCallback, BeforeAllCallback, BeforeEachCallback {
 
     private File generateDir;
     private File compileDir;
@@ -55,10 +61,16 @@ public class Jsonschema2PojoRule implements TestRule {
     private boolean captureDiagnostics = false;
     private boolean sourceDirInitialized = false;
     private boolean classesDirInitialized = false;
+    private boolean isClassRule = false;
     private List<Diagnostic<? extends JavaFileObject>> diagnostics;
 
     public Jsonschema2PojoRule captureDiagnostics() {
         this.captureDiagnostics = true;
+        return this;
+    }
+
+    public Jsonschema2PojoRule classRule() {
+        this.isClassRule = true;
         return this;
     }
 
@@ -94,27 +106,69 @@ public class Jsonschema2PojoRule implements TestRule {
         return new Statement() {
             @Override
             public void evaluate() throws Throwable {
-                active = true;
-                diagnostics = new ArrayList<>();
                 boolean captureDiagnosticsStart = captureDiagnostics;
                 try {
-                    File testRoot = methodNameDir(classNameDir(rootDirectory(), description.getClassName()),
-                            description.getMethodName());
-                    generateDir = new File(testRoot, "generate");
-                    compileDir = new File(testRoot, "compile");
-
+                    setUp(description.getClassName(), description.getMethodName());
                     base.evaluate();
                 } finally {
-                    generateDir = null;
-                    compileDir = null;
-                    sourceDirInitialized = false;
-                    classesDirInitialized = false;
+                    cleanUp();
                     captureDiagnostics = captureDiagnosticsStart;
-                    diagnostics = null;
-                    active = false;
                 }
             }
         };
+    }
+
+    private void setUp(String className, String methodName) {
+        active = true;
+        diagnostics = new ArrayList<>();
+
+        final File testRoot = methodNameDir(classNameDir(rootDirectory(), className), methodName);
+        generateDir = new File(testRoot, "generate");
+        compileDir = new File(testRoot, "compile");
+    }
+
+    private void cleanUp() {
+        generateDir = null;
+        compileDir = null;
+        sourceDirInitialized = false;
+        classesDirInitialized = false;
+        diagnostics = null;
+        active = false;
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) {
+        if (isClassRule) {
+            cleanUp();
+        }
+    }
+
+    @Override
+    public void beforeAll(ExtensionContext context) {
+        if (!isClassRule) {
+            return;
+        }
+        setUp(context.getRequiredTestClass().getName(), null);
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) {
+        if (!isClassRule) {
+            cleanUp();
+        }
+    }
+
+    @Override
+    public void beforeEach(ExtensionContext context) {
+        if (isClassRule) {
+            return;
+        }
+        final String displayName = StringUtils.removeEnd(context.getDisplayName(), "()");
+        String methodName = context.getRequiredTestMethod().getName();
+        if (!StringUtils.equals(displayName, methodName)) {
+            methodName = methodName + "[" + displayName + "]";
+        }
+        setUp(context.getRequiredTestClass().getName(), methodName);
     }
 
     public File generate(String schema, String targetPackage) {
@@ -225,7 +279,7 @@ public class Jsonschema2PojoRule implements TestRule {
         }
     }
 
-    static File methodNameDir(File baseDir, String methodName) throws IOException {
+    static File methodNameDir(File baseDir, String methodName) {
         if (methodName == null)
             methodName = "class";
         Matcher matcher = methodNamePattern.matcher(methodName);
@@ -236,7 +290,7 @@ public class Jsonschema2PojoRule implements TestRule {
             }
             return new File(baseDir, safeDirName(matcher.group(1)));
         } else {
-            throw new IOException("cannot transform methodName (" + methodName + ") into path");
+            throw new IllegalArgumentException("cannot transform methodName (" + methodName + ") into path");
         }
     }
 

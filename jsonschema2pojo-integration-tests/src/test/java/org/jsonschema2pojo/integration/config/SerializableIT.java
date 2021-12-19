@@ -17,11 +17,11 @@
 package org.jsonschema2pojo.integration.config;
 
 import static org.jsonschema2pojo.integration.util.CodeGenerationHelper.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.Serializable;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class SerializableIT {
 
@@ -33,7 +33,7 @@ public class SerializableIT {
 
         Class generatedType = resultsClassLoader.loadClass("com.example.PrimitiveProperties");
 
-        assertFalse("Beans should not implement serializable by default", Serializable.class.isAssignableFrom(generatedType));
+        assertFalse(Serializable.class.isAssignableFrom(generatedType), "Beans should not implement serializable by default");
 
     }
 
@@ -44,7 +44,7 @@ public class SerializableIT {
 
         Class generatedType = resultsClassLoader.loadClass("com.example.PrimitiveProperties");
 
-        assertTrue("Beans should implement serializable when config is set", Serializable.class.isAssignableFrom(generatedType));
+        assertTrue(Serializable.class.isAssignableFrom(generatedType), "Beans should implement serializable when config is set");
     }
 
     @Test
@@ -54,7 +54,7 @@ public class SerializableIT {
 
         Class generatedType = resultsClassLoader.loadClass("com.example.PrimitiveProperties");
 
-        assertTrue("Beans should implement serializable when config is set", Serializable.class.isAssignableFrom(generatedType));
+        assertTrue(Serializable.class.isAssignableFrom(generatedType), "Beans should implement serializable when config is set");
     }
 
 }

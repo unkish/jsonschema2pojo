@@ -16,7 +16,6 @@
 package org.jsonschema2pojo.gradle
 
 import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
 
 import java.lang.reflect.Field
 
@@ -24,8 +23,7 @@ import org.apache.commons.io.FileUtils
 import org.gradle.tooling.BuildLauncher
 import org.gradle.tooling.GradleConnector
 import org.gradle.tooling.ProjectConnection
-import org.jsonschema2pojo.gradle.JsonSchemaExtension
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 class JsonSchemaPluginSpec {
 

@@ -16,9 +16,9 @@
 
 package org.jsonschema2pojo.integration.config;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.jsonschema2pojo.integration.util.CodeGenerationHelper.*;
-import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,12 +26,12 @@ import java.io.IOException;
 
 import org.apache.commons.io.IOUtils;
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class OutputEncodingIT {
 
-    @Rule public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
 
     @Test
     public void writeExtendedCharactersAsUtf8SourceCodeByDefault() throws IOException {

@@ -17,19 +17,20 @@
 package org.jsonschema2pojo.integration.config;
 
 import static org.jsonschema2pojo.integration.util.CodeGenerationHelper.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.net.URL;
 
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class RemoveOldOutputIT {
 
-    @Rule public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension public Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
 
-    @Test(expected = ClassNotFoundException.class)
-    public void removeOldOutputCausesOldTypesToBeDeleted() throws ClassNotFoundException {
+    @Test
+    public void removeOldOutputCausesOldTypesToBeDeleted() {
 
         URL schema1 = getClass().getResource("/schema/properties/primitiveProperties.json");
         URL schema2 = getClass().getResource("/schema/properties/orderedProperties.json");
@@ -37,7 +38,7 @@ public class RemoveOldOutputIT {
         schemaRule.generate(schema1, "com.example", config("removeOldOutput", true));
         schemaRule.generate(schema2, "com.example", config("removeOldOutput", true));
 
-        schemaRule.compile().loadClass("com.example.PrimitiveProperties");
+        assertThrows(ClassNotFoundException.class, () -> schemaRule.compile().loadClass("com.example.PrimitiveProperties"));
 
     }
 

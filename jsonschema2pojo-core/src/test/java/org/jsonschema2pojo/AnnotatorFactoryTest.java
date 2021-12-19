@@ -16,15 +16,16 @@
 
 package org.jsonschema2pojo;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.jsonschema2pojo.AnnotationStyle.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class AnnotatorFactoryTest {
 
@@ -66,11 +67,11 @@ public class AnnotatorFactoryTest {
      * Test uses reflection to get passed the generic type constraints and
      * invoke as if invoked through typical configuration.
      */
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void attemptToCreateAnnotatorFromIncompatibleClassCausesIllegalArgumentException() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
 
         Method factoryMethod = AnnotatorFactory.class.getMethod("getAnnotator", Class.class);
-        factoryMethod.invoke(String.class);
+        assertThrows(IllegalArgumentException.class, () -> factoryMethod.invoke(String.class));
 
     }
 

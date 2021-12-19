@@ -25,12 +25,9 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import org.jsonschema2pojo.GenerationConfig;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@RunWith(Parameterized.class)
 public class LanguageFeaturesTest {
 
     public static enum VersionEnum {
@@ -52,7 +49,6 @@ public class LanguageFeaturesTest {
         }
     }
 
-    @Parameters
     public static Collection<Object[]> parameters() {
         return Arrays.asList(new Object[][] {
             { "1.5", BEFORE_6 },
@@ -68,21 +64,15 @@ public class LanguageFeaturesTest {
         });
     }
 
-    private String version;
-    private VersionEnum versionSpec;
-
-    public LanguageFeaturesTest(String version, VersionEnum versionSpec) {
-        this.version = version;
-        this.versionSpec = versionSpec;
-    }
-
-    @Test
-    public void correctTestForJava7() {
+    @ParameterizedTest
+    @MethodSource("parameters")
+    public void correctTestForJava7(String version, VersionEnum versionSpec) {
         assertThat(LanguageFeatures.canUseJava7(mockConfig(version)), equalTo(versionSpec.canUse7));
     }
 
-    @Test
-    public void correctTestForJava8() {
+    @ParameterizedTest
+    @MethodSource("parameters")
+    public void correctTestForJava8(String version, VersionEnum versionSpec) {
         assertThat(LanguageFeatures.canUseJava8(mockConfig(version)), equalTo(versionSpec.canUse8));
     }
 

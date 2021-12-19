@@ -24,8 +24,8 @@ import org.jsonschema2pojo.Annotator;
 import org.jsonschema2pojo.RuleLogger;
 import org.jsonschema2pojo.Schema;
 import org.jsonschema2pojo.util.NameHelper;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -49,7 +49,7 @@ public class EnumRuleTest {
 
     private final EnumRule rule = new EnumRule(ruleFactory);
 
-    @Before
+    @BeforeEach
     public void wireUpConfig() {
         when(ruleFactory.getNameHelper()).thenReturn(nameHelper);
         when(ruleFactory.getLogger()).thenReturn(logger);

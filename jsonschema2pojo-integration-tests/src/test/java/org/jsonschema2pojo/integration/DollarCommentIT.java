@@ -22,23 +22,23 @@ import com.thoughtworks.qdox.model.JavaField;
 import com.thoughtworks.qdox.model.JavaMethod;
 import com.thoughtworks.qdox.model.Type;
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.io.IOException;
 
+import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
 
 public class DollarCommentIT {
 
-    @ClassRule public static Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension public static Jsonschema2PojoRule schemaRule = new Jsonschema2PojoRule().classRule();
 
     private static JavaClass classWithDescription;
 
-    @BeforeClass
+    @BeforeAll
     public static void generateClasses() throws IOException {
 
         schemaRule.generateAndCompile("/schema/dollar_comment/dollar_comment.json", "com.example");

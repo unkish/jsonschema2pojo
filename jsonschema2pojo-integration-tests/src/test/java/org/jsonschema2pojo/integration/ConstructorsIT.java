@@ -17,35 +17,34 @@
 package org.jsonschema2pojo.integration;
 
 import static org.jsonschema2pojo.integration.util.CodeGenerationHelper.*;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 
 import org.jsonschema2pojo.integration.util.Jsonschema2PojoRule;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.sun.codemodel.JMod;
 
-@RunWith(Enclosed.class)
 public class ConstructorsIT {
 
   public static void assertHasModifier(int modifier, int modifiers, String modifierName) {
-    assertEquals("Expected the bit " + modifierName + " (" + modifier + ")" + " to be set but got: " + modifiers, modifier, modifier & modifiers);
+    assertEquals(modifier, modifier & modifiers, "Expected the bit " + modifierName + " (" + modifier + ")" + " to be set but got: " + modifiers);
   }
 
   public static void assertHasOnlyDefaultConstructor(Class<?> cls) {
     Constructor<?>[] constructors = cls.getConstructors();
 
-    assertEquals(constructors.length, 1);
+    assertEquals(1, constructors.length);
 
-    assertEquals("Expected " + cls + " to only have the default, no-args constructor", 0, constructors[0].getParameterTypes().length);
+    assertEquals(0, constructors[0].getParameterTypes().length, "Expected " + cls + " to only have the default, no-args constructor");
   }
 
   public static Constructor<?> getAllPropertiesConstructor(Class<?> clazz) throws NoSuchMethodException {
@@ -74,7 +73,7 @@ public class ConstructorsIT {
   }
 
 
-  @Ignore
+  @Disabled
   public static class ConstructorTestClasses {
 
     protected Class<?> typeWithoutProperties;
@@ -104,15 +103,17 @@ public class ConstructorsIT {
   /**
    * Tests what happens when includeConstructors is set to true
    */
-  public static class DefaultInlcudeConstructorsIT {
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class DefaultInlcudeConstructorsIT {
 
-    @ClassRule
-    public static Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension
+    public Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule().classRule();
 
-    private static ConstructorTestClasses testClasses = null;
+    private ConstructorTestClasses testClasses = null;
 
-    @BeforeClass
-    public static void generateAndCompileConstructorClasses() throws ClassNotFoundException {
+    @BeforeAll
+    public void generateAndCompileConstructorClasses() throws ClassNotFoundException {
       // @formatter:off
       testClasses = new ConstructorTestClasses(classSchemaRule, config(
           "propertyWordDelimiters", "_",
@@ -139,15 +140,17 @@ public class ConstructorsIT {
   /**
    * Tests with constructorsRequiredPropertiesOnly set to true
    */
-  public static class RequiredOnlyIT {
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class RequiredOnlyIT {
 
-    @ClassRule
-    public static Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension
+    public Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule().classRule();
 
-    private static ConstructorTestClasses testClasses = null;
+    private ConstructorTestClasses testClasses = null;
 
-    @BeforeClass
-    public static void generateAndCompileConstructorClasses() throws ClassNotFoundException {
+    @BeforeAll
+    public void generateAndCompileConstructorClasses() throws ClassNotFoundException {
       // @formatter:off
       testClasses = new ConstructorTestClasses(classSchemaRule,
           config(
@@ -201,15 +204,17 @@ public class ConstructorsIT {
   /**
    * Tests what happens when includeConstructors is set to true
    */
-  public static class IncludeRequiredConstructorsIT {
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class IncludeRequiredConstructorsIT {
 
-    @ClassRule
-    public static Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension
+    public Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule().classRule();
 
-    private static ConstructorTestClasses testClasses = null;
+    private ConstructorTestClasses testClasses = null;
 
-    @BeforeClass
-    public static void generateAndCompileConstructorClasses() throws ClassNotFoundException {
+    @BeforeAll
+    public void generateAndCompileConstructorClasses() throws ClassNotFoundException {
       // @formatter:off
       testClasses = new ConstructorTestClasses(classSchemaRule,
           config(
@@ -274,15 +279,17 @@ public class ConstructorsIT {
   /**
    * Tests what happens when includeConstructors is set to true
    */
-  public static class IncludeCopyConstructorsIT {
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class IncludeCopyConstructorsIT {
 
-    @ClassRule
-    public static Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule();
+    @RegisterExtension
+    public Jsonschema2PojoRule classSchemaRule = new Jsonschema2PojoRule().classRule();
 
-    private static ConstructorTestClasses testClasses = null;
+    private ConstructorTestClasses testClasses = null;
 
-    @BeforeClass
-    public static void generateAndCompileConstructorClasses() throws ClassNotFoundException {
+    @BeforeAll
+    public void generateAndCompileConstructorClasses() throws ClassNotFoundException {
       // @formatter:off
       testClasses = new ConstructorTestClasses(classSchemaRule,
           config("propertyWordDelimiters", "_",
