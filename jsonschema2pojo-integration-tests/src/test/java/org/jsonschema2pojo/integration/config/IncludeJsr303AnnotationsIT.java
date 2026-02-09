@@ -29,8 +29,12 @@ import jakarta.validation.Validator;
 import java.beans.PropertyDescriptor;
 import java.io.File;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedParameterizedType;
+import java.lang.reflect.AnnotatedType;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -383,25 +387,25 @@ public class IncludeJsr303AnnotationsIT {
 
         final Class<? extends Annotation> expectedValidAnnotation = getValidAnnotationClass();
         Class<?> validArrayType = resultsClassLoader.loadClass("com.example.ValidArray");
-        java.lang.reflect.Field objectArrayField = validArrayType.getDeclaredField("objectarray");
+        Field objectArrayField = validArrayType.getDeclaredField("objectarray");
 
         // The @Valid annotation should be on the item type (e.g., List<@Valid Item>), not on the field
         assertThat("@Valid should not be on the field, but on the item type",
                 objectArrayField.getAnnotation(expectedValidAnnotation), is(nullValue()));
 
         // Verify the @Valid annotation IS present on the type parameter (item type)
-        java.lang.reflect.AnnotatedType annotatedType = objectArrayField.getAnnotatedType();
+        AnnotatedType annotatedType = objectArrayField.getAnnotatedType();
         assertThat("Field type should be an AnnotatedParameterizedType",
-                annotatedType, is(instanceOf(java.lang.reflect.AnnotatedParameterizedType.class)));
+                annotatedType, is(instanceOf(AnnotatedParameterizedType.class)));
 
-        java.lang.reflect.AnnotatedParameterizedType parameterizedType =
-                (java.lang.reflect.AnnotatedParameterizedType) annotatedType;
-        java.lang.reflect.AnnotatedType[] typeArguments = parameterizedType.getAnnotatedActualTypeArguments();
+        AnnotatedParameterizedType parameterizedType =
+                (AnnotatedParameterizedType) annotatedType;
+        AnnotatedType[] typeArguments = parameterizedType.getAnnotatedActualTypeArguments();
 
         assertThat("Should have one type argument", typeArguments.length, is(1));
 
         // Check that the type argument (item type) has exactly one annotation: @Valid
-        java.lang.annotation.Annotation[] itemTypeAnnotations = typeArguments[0].getAnnotations();
+        Annotation[] itemTypeAnnotations = typeArguments[0].getAnnotations();
         assertThat("Item type should have exactly one annotation", itemTypeAnnotations.length, is(1));
         assertThat("@Valid annotation should be on the item type parameter",
                 itemTypeAnnotations[0].annotationType(), is(expectedValidAnnotation));
@@ -429,27 +433,58 @@ public class IncludeJsr303AnnotationsIT {
 
         // Verify that @Valid is on the map value type parameter, not on the field itself
         final Class<? extends Annotation> expectedValidAnnotation = getValidAnnotationClass();
-        java.lang.reflect.Field additionalPropertiesField = parentType.getDeclaredField("additionalProperties");
+        Field additionalPropertiesField = parentType.getDeclaredField("additionalProperties");
 
         assertThat("@Valid should not be on the field, but on the value type parameter",
                additionalPropertiesField.getAnnotation(expectedValidAnnotation), is(nullValue()));
 
-        java.lang.reflect.AnnotatedType annotatedType = additionalPropertiesField.getAnnotatedType();
+        AnnotatedType annotatedType = additionalPropertiesField.getAnnotatedType();
         assertThat("Field type should be an AnnotatedParameterizedType",
-                annotatedType, is(instanceOf(java.lang.reflect.AnnotatedParameterizedType.class)));
+                annotatedType, is(instanceOf(AnnotatedParameterizedType.class)));
 
-        java.lang.reflect.AnnotatedParameterizedType parameterizedType =
-                (java.lang.reflect.AnnotatedParameterizedType) annotatedType;
-        java.lang.reflect.AnnotatedType[] typeArguments = parameterizedType.getAnnotatedActualTypeArguments();
+        AnnotatedParameterizedType parameterizedType =
+                (AnnotatedParameterizedType) annotatedType;
+        AnnotatedType[] typeArguments = parameterizedType.getAnnotatedActualTypeArguments();
 
         assertThat("Should have two type arguments (Map<String, ValueType>)", typeArguments.length, is(2));
 
         assertThat("Key type (String) should have no annotations", typeArguments[0].getAnnotations().length, is(0));
 
-        java.lang.annotation.Annotation[] valueTypeAnnotations = typeArguments[1].getAnnotations();
+        Annotation[] valueTypeAnnotations = typeArguments[1].getAnnotations();
         assertThat("Value type should have exactly one annotation", valueTypeAnnotations.length, is(1));
         assertThat("@Valid annotation should be on the value type parameter",
                 valueTypeAnnotations[0].annotationType(), is(expectedValidAnnotation));
+    }
+
+    @Test
+    public void jsr303ValidAnnotationUsesSimpleNamesWhenImported() throws Exception {
+        schemaRule.generateAndCompile("/schema/jsr303/validArray.json", "com.example",
+                config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
+
+        String source = Files.readString(schemaRule.generated("com/example/ValidArray.java").toPath());
+
+        assertThat("Should use simple name @Valid String for imported types",
+                source, containsString("List<@Valid String>"));
+        assertThat("Should use simple name @Valid Objectarray for generated types",
+                source, containsString("List<@Valid Objectarray>"));
+        assertThat("Should use simple name @Valid Product for $ref types",
+                source, containsString("List<@Valid Product>"));
+        assertThat("Should not contain java.lang.@Valid anywhere",
+                source, not(containsString("java.lang.@Valid")));
+    }
+
+    @Test
+    public void jsr303ValidAnnotationUsesCorrectPlacementForQualifiedTypes() throws Exception {
+        schemaRule.generateAndCompile("/schema/jsr303/validArrayWithCollision.json", "com.example",
+                config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
+
+        String source = Files.readString(
+                schemaRule.generated("com/example/ValidArrayWithCollision.java").toPath());
+
+        assertThat("Should use correct JLS §9.7.4 placement: java.lang.@Valid String",
+                source, containsString("java.lang.@Valid String"));
+        assertThat("Should not use incorrect placement: @Valid java.lang.String",
+                source, not(containsString("@Valid java.lang.String")));
     }
 
     private void assertNumberOfConstraintViolationsOn(Object instance, Matcher<Integer> matcher) {
