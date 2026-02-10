@@ -243,7 +243,7 @@ public class JAnnotatedClass extends JClass {
         String rawSimpleName = rawType.name();
         String prefix = rawFullName.substring(0, rawFullName.length() - rawSimpleName.length());
 
-        if (!isImported(f, basis) && !prefix.isEmpty()) {
+        if (!isImported(f, rawType) && !prefix.isEmpty()) {
             f.p(prefix);
         }
         printAnnotations(f);
