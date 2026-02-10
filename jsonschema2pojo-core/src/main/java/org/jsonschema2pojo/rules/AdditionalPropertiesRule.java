@@ -123,10 +123,6 @@ public class AdditionalPropertiesRule implements Rule<JDefinedClass, JDefinedCla
 
         addSetter(jclass, propertyType, field);
 
-        if (ruleFactory.getGenerationConfig().isIncludeJsr303Annotations()) {
-            ruleFactory.getValidRule().apply(nodeName, node, parent, field, schema);
-        }
-
         if (ruleFactory.getGenerationConfig().isGenerateBuilders()) {
             addBuilder(jclass, propertyType, field);
         }

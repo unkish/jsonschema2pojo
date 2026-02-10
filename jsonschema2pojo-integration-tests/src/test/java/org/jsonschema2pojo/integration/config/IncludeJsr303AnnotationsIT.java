@@ -404,9 +404,9 @@ public class IncludeJsr303AnnotationsIT {
 
         assertThat("Should have one type argument", typeArguments.length, is(1));
 
-        // Check that the type argument (item type) has exactly one annotation: @Valid
+        // Check that the type argument (item type) has @Valid
         Annotation[] itemTypeAnnotations = typeArguments[0].getAnnotations();
-        assertThat("Item type should have exactly one annotation", itemTypeAnnotations.length, is(1));
+        assertThat("Item type should have @Valid annotation", itemTypeAnnotations.length, is(1));
         assertThat("@Valid annotation should be on the item type parameter",
                 itemTypeAnnotations[0].annotationType(), is(expectedValidAnnotation));
     }
@@ -454,6 +454,97 @@ public class IncludeJsr303AnnotationsIT {
         assertThat("Value type should have exactly one annotation", valueTypeAnnotations.length, is(1));
         assertThat("@Valid annotation should be on the value type parameter",
                 valueTypeAnnotations[0].annotationType(), is(expectedValidAnnotation));
+    }
+
+    @Test
+    public void jsr303ValidAnnotationOnAdditionalPropertiesWithNestedArrays() throws Exception {
+        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(
+                "/schema/jsr303/validAdditionalPropertiesWithNestedArrays.json", "com.example",
+                config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
+
+        final Class<? extends Annotation> expectedValidAnnotation = getValidAnnotationClass();
+        Class<?> generatedType = resultsClassLoader.loadClass("com.example.ValidAdditionalPropertiesWithNestedArrays");
+        Field additionalPropertiesField = generatedType.getDeclaredField("additionalProperties");
+
+        // @Valid should not be on the field itself (Map is a container)
+        assertThat(additionalPropertiesField.getAnnotation(expectedValidAnnotation), is(nullValue()));
+
+        // Container types are not annotated — only the innermost non-container type has @Valid
+        String source = Files.readString(
+                schemaRule.generated("com/example/ValidAdditionalPropertiesWithNestedArrays.java").toPath());
+        assertThat(source, containsString(
+                "Map<String, List<List<List<List<@Valid ValidAdditionalPropertiesWithNestedArraysProperty>>>>>"));
+
+        // Verify cascading validation works through nested containers
+        Class<?> itemType = resultsClassLoader.loadClass(
+                "com.example.ValidAdditionalPropertiesWithNestedArraysProperty");
+
+        Object validItem = createInstanceWithPropertyValue(itemType, "name", "OK");
+        Object invalidItem = createInstanceWithPropertyValue(itemType, "name", "Too long");
+
+        Object parent = generatedType.getDeclaredConstructor().newInstance();
+        Method setter = generatedType.getMethod("setAdditionalProperty", String.class, List.class);
+
+        setter.invoke(parent, "test", List.of(List.of(List.of(List.of(validItem)))));
+        assertNumberOfConstraintViolationsOn(parent, is(0));
+
+        setter.invoke(parent, "test", List.of(List.of(List.of(List.of(invalidItem)))));
+        assertNumberOfConstraintViolationsOn(parent, is(1));
+    }
+
+    @Test
+    public void jsr303ValidAnnotationOnAdditionalPropertiesWithItemTypeArray() throws Exception {
+        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(
+                "/schema/jsr303/validAdditionalPropertiesWithItemTypeArray.json", "com.example",
+                config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
+
+        final Class<? extends Annotation> expectedValidAnnotation = getValidAnnotationClass();
+        Class<?> generatedType = resultsClassLoader.loadClass("com.example.ValidAdditionalPropertiesWithItemTypeArray");
+        Field additionalPropertiesField = generatedType.getDeclaredField("additionalProperties");
+
+        // @Valid should not be on the field itself (Map is a container)
+        assertThat("@Valid should not be on the field",
+                additionalPropertiesField.getAnnotation(expectedValidAnnotation), is(nullValue()));
+
+        // Value type is List<@Valid String> — the List itself is a container and has no @Valid
+        AnnotatedParameterizedType mapType =
+                (AnnotatedParameterizedType) additionalPropertiesField.getAnnotatedType();
+        AnnotatedType[] mapTypeArgs = mapType.getAnnotatedActualTypeArguments();
+        assertThat("Map should have two type arguments", mapTypeArgs.length, is(2));
+
+        assertThat("Key type should have no annotations", mapTypeArgs[0].getAnnotations().length, is(0));
+        assertThat("Value type (List) should have no annotations (containers are not annotated)",
+                mapTypeArgs[1].getAnnotations().length, is(0));
+    }
+
+    @Test
+    public void jsr303ValidAnnotationsOnExistingJavaType() throws Exception {
+        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(
+                "/schema/jsr303/validExistingJavaType.json", "com.example",
+                config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
+
+        final Class<? extends Annotation> expectedValidAnnotation = getValidAnnotationClass();
+        Class<?> generatedType = resultsClassLoader.loadClass("com.example.ValidExistingJavaType");
+
+        // typedMap: no @Valid (container types are not annotated, existingJavaType items don't go through the pipeline)
+        Field typedMapField = generatedType.getDeclaredField("typedMap");
+        assertThat(typedMapField.getAnnotation(expectedValidAnnotation), is(nullValue()));
+
+        // rawMap: no @Valid (container types are not annotated)
+        Field rawMapField = generatedType.getDeclaredField("rawMap");
+        assertThat(rawMapField.getAnnotation(expectedValidAnnotation), is(nullValue()));
+
+        // typedList: no @Valid (container types are not annotated)
+        Field typedListField = generatedType.getDeclaredField("typedList");
+        assertThat(typedListField.getAnnotation(expectedValidAnnotation), is(nullValue()));
+
+        // rawList: no @Valid (container types are not annotated)
+        Field rawListField = generatedType.getDeclaredField("rawList");
+        assertThat(rawListField.getAnnotation(expectedValidAnnotation), is(nullValue()));
+
+        // standardType: @Valid on field (not a collection)
+        Field standardTypeField = generatedType.getDeclaredField("standardType");
+        assertThat(standardTypeField.getAnnotation(expectedValidAnnotation), is(not(nullValue())));
     }
 
     @Test
