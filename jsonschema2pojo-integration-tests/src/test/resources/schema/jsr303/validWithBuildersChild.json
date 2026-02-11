@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "javaType": "com.example.Foo",
+  "extendsJavaClass": "com.example.Bar",
+  "properties": {
+    "version": {
+      "type": "integer"
+    }
+  }
+}

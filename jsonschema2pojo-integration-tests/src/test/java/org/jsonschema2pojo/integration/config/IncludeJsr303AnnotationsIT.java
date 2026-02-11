@@ -457,6 +457,99 @@ public class IncludeJsr303AnnotationsIT {
     }
 
     @Test
+    public void jsr303AnnotationsWithAdditionalPropertiesTrue() throws Exception {
+        ClassLoader resultsClassLoader = schemaRule.generateAndCompile(
+                "/schema/jsr303/validAdditionalPropertiesTrue.json", "com.example",
+                config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
+
+        final Class<? extends Annotation> expectedValidAnnotation = getValidAnnotationClass();
+        Class<?> generatedType = resultsClassLoader.loadClass("com.example.ValidAdditionalPropertiesTrue");
+        Field additionalPropertiesField = generatedType.getDeclaredField("additionalProperties");
+
+        // @Valid should not be on the field
+        assertThat("@Valid should not be on the field",
+                additionalPropertiesField.getAnnotation(expectedValidAnnotation), is(nullValue()));
+
+        // @Valid should be on the Object value type parameter
+        AnnotatedParameterizedType mapType =
+                (AnnotatedParameterizedType) additionalPropertiesField.getAnnotatedType();
+        AnnotatedType[] mapTypeArgs = mapType.getAnnotatedActualTypeArguments();
+        assertThat("Map should have two type arguments", mapTypeArgs.length, is(2));
+        assertThat("Key type should have no annotations", mapTypeArgs[0].getAnnotations().length, is(0));
+
+        Annotation[] valueTypeAnnotations = mapTypeArgs[1].getAnnotations();
+        assertThat("Value type should have exactly one annotation", valueTypeAnnotations.length, is(1));
+        assertThat("@Valid annotation should be on the value type parameter",
+                valueTypeAnnotations[0].annotationType(), is(expectedValidAnnotation));
+    }
+
+    @Test
+    public void jsr303ValidAnnotationOnClassWithBuilders() throws Exception {
+        schemaRule.generate("/schema/jsr303/validWithBuildersParent.json", "com.example",
+                config("includeJsr303Annotations", true,
+                        "useJakartaValidation", useJakartaValidation,
+                        "generateBuilders", true));
+        schemaRule.generate("/schema/jsr303/validWithBuildersChild.json", "com.example",
+                config("includeJsr303Annotations", true,
+                        "useJakartaValidation", useJakartaValidation,
+                        "generateBuilders", true));
+        ClassLoader resultsClassLoader = schemaRule.compile();
+
+        Class<?> parentType = resultsClassLoader.loadClass("com.example.Bar");
+        Class<?> childType = resultsClassLoader.loadClass("com.example.Foo");
+
+        assertThat("Foo should extend Bar", childType.getSuperclass(), is(parentType));
+
+        final Class<? extends Annotation> expectedValidAnnotation = getValidAnnotationClass();
+        Method withVersion = childType.getMethod("withVersion", Integer.class);
+        AnnotatedType paramType = withVersion.getAnnotatedParameterTypes()[0];
+        assertThat("withVersion parameter type should have @Valid", paramType.getAnnotations().length, is(1));
+        assertThat("@Valid should be on the withVersion parameter type", paramType.getAnnotations()[0].annotationType(), is(expectedValidAnnotation));
+    }
+
+    @Test
+    public void jsr303ValidAnnotationOnSelfRef() throws Exception {
+        ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/ref/selfRefs.json", "com.example",
+                config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
+
+        final Class<? extends Annotation> expectedValidAnnotation = getValidAnnotationClass();
+        Class<?> selfRefsType = resultsClassLoader.loadClass("com.example.SelfRefs");
+
+        // Direct self-ref should have @Valid on the field
+        Field childOfSelf = selfRefsType.getDeclaredField("childOfSelf");
+        assertThat("@Valid should be on self-ref field", childOfSelf.getAnnotation(expectedValidAnnotation), is(not(nullValue())));
+    }
+
+    @Test
+    public void jsr303ValidAnnotationOnRef() throws Exception {
+        ClassLoader resultsClassLoader = schemaRule.generateAndCompile("/schema/ref/refsToA.json", "com.example",
+                config("includeJsr303Annotations", true, "useJakartaValidation", useJakartaValidation));
+
+        final Class<? extends Annotation> expectedValidAnnotation = getValidAnnotationClass();
+        Class<?> refsToAType = resultsClassLoader.loadClass("com.example.RefsToA");
+
+        // Direct $ref property should have @Valid on the field
+        Field aField = refsToAType.getDeclaredField("a");
+        assertThat("@Valid should be on the $ref field", aField.getAnnotation(expectedValidAnnotation), is(not(nullValue())));
+
+        // Array of $ref should have @Valid on the item type parameter, not on the field
+        Field arrayOfAField = refsToAType.getDeclaredField("arrayOfA");
+        assertThat("@Valid should not be on the array field", arrayOfAField.getAnnotation(expectedValidAnnotation), is(nullValue()));
+        AnnotatedParameterizedType listType = (AnnotatedParameterizedType) arrayOfAField.getAnnotatedType();
+        AnnotatedType[] listTypeArgs = listType.getAnnotatedActualTypeArguments();
+        assertThat("Item type should have @Valid", listTypeArgs[0].getAnnotations().length, is(1));
+        assertThat("@Valid should be on the item type", listTypeArgs[0].getAnnotations()[0].annotationType(), is(expectedValidAnnotation));
+
+        // additionalProperties $ref should have @Valid on the map value type parameter
+        Field additionalPropertiesField = refsToAType.getDeclaredField("additionalProperties");
+        assertThat("@Valid should not be on the map field", additionalPropertiesField.getAnnotation(expectedValidAnnotation), is(nullValue()));
+        AnnotatedParameterizedType mapType = (AnnotatedParameterizedType) additionalPropertiesField.getAnnotatedType();
+        AnnotatedType[] mapTypeArgs = mapType.getAnnotatedActualTypeArguments();
+        assertThat("Map value type should have @Valid", mapTypeArgs[1].getAnnotations().length, is(1));
+        assertThat("@Valid should be on the map value type", mapTypeArgs[1].getAnnotations()[0].annotationType(), is(expectedValidAnnotation));
+    }
+
+    @Test
     public void jsr303ValidAnnotationOnAdditionalPropertiesWithNestedArrays() throws Exception {
         ClassLoader resultsClassLoader = schemaRule.generateAndCompile(
                 "/schema/jsr303/validAdditionalPropertiesWithNestedArrays.json", "com.example",
