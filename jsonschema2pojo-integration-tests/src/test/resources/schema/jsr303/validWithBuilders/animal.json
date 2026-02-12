@@ -1,8 +1,8 @@
 {
   "type": "object",
-  "javaType": "com.example.Bar",
+  "javaType": "com.example.Animal",
   "properties": {
-    "version": {
+    "age": {
       "type": "integer"
     }
   }

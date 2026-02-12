@@ -485,26 +485,23 @@ public class IncludeJsr303AnnotationsIT {
 
     @Test
     public void jsr303ValidAnnotationOnClassWithBuilders() throws Exception {
-        schemaRule.generate("/schema/jsr303/validWithBuildersParent.json", "com.example",
-                config("includeJsr303Annotations", true,
-                        "useJakartaValidation", useJakartaValidation,
-                        "generateBuilders", true));
-        schemaRule.generate("/schema/jsr303/validWithBuildersChild.json", "com.example",
+        schemaRule.generate(
+                "/schema/jsr303/validWithBuilders", "com.example",
                 config("includeJsr303Annotations", true,
                         "useJakartaValidation", useJakartaValidation,
                         "generateBuilders", true));
         ClassLoader resultsClassLoader = schemaRule.compile();
 
-        Class<?> parentType = resultsClassLoader.loadClass("com.example.Bar");
-        Class<?> childType = resultsClassLoader.loadClass("com.example.Foo");
+        Class<?> parentType = resultsClassLoader.loadClass("com.example.Animal");
+        Class<?> childType = resultsClassLoader.loadClass("com.example.Dog");
 
-        assertThat("Foo should extend Bar", childType.getSuperclass(), is(parentType));
+        assertThat("Dog should extend Animal", childType.getSuperclass(), is(parentType));
 
         final Class<? extends Annotation> expectedValidAnnotation = getValidAnnotationClass();
-        Method withVersion = childType.getMethod("withVersion", Integer.class);
-        AnnotatedType paramType = withVersion.getAnnotatedParameterTypes()[0];
-        assertThat("withVersion parameter type should have @Valid", paramType.getAnnotations().length, is(1));
-        assertThat("@Valid should be on the withVersion parameter type", paramType.getAnnotations()[0].annotationType(), is(expectedValidAnnotation));
+        Method withAge = childType.getMethod("withAge", Integer.class);
+        AnnotatedType paramType = withAge.getAnnotatedParameterTypes()[0];
+        assertThat("withAge parameter type should have @Valid", paramType.getAnnotations().length, is(1));
+        assertThat("@Valid should be on the withAge parameter type", paramType.getAnnotations()[0].annotationType(), is(expectedValidAnnotation));
     }
 
     @Test
