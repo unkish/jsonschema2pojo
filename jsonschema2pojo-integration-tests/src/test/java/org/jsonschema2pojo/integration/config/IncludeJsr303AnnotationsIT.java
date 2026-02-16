@@ -760,6 +760,17 @@ public class IncludeJsr303AnnotationsIT {
                 "existingTypeAsArrayItem",
                 List.of(Map.of("a", new ClassWithSizeAnnotation())));
         assertNumberOfConstraintViolationsOn(instance, is(1));
+
+        instance = createInstanceWithPropertyValue(clazz, "itemOfExistingClass", new ClassWithSizeAnnotation());
+        assertNumberOfConstraintViolationsOn(instance, is(1));
+
+        // Note: at present arrays are generated as single item, once arrays are generated correctly below checks should be adjusted
+        instance = createInstanceWithPropertyValue(clazz, "arrayOfExistingClasses", new ClassWithSizeAnnotation());
+        assertNumberOfConstraintViolationsOn(instance, is(1));
+
+        // Validation does not cascade through multidimensional arrays at present
+        instance = createInstanceWithPropertyValue(clazz, "multiDimensionalArrayOfExistingClasses", new ClassWithSizeAnnotation());
+        assertNumberOfConstraintViolationsOn(instance, is(1));
     }
 
     private void assertNumberOfConstraintViolationsOn(Object instance, Matcher<Integer> matcher) {

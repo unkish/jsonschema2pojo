@@ -8,7 +8,7 @@
     },
     "listOfOptionalStringExistingClassMaps": {
       "type": "object",
-      "existingJavaType": "java.util.List<java.util.Optional<java.util.Map<java.lang.String, ClassWithSizeAnnotation>>>"
+      "existingJavaType": "java.util.List<java.util.Optional<java.util.Map<java.lang.String, com.example.ClassWithSizeAnnotation>>>"
     },
     "listOfOptionalStringObjectMaps": {
       "type": "object",
@@ -51,6 +51,18 @@
       "items": {
         "existingJavaType": "java.util.Map<java.lang.String, com.example.ClassWithSizeAnnotation>"
       }
+    },
+    "itemOfExistingClass": {
+      "type": "object",
+      "existingJavaType": "com.example.ClassWithSizeAnnotation"
+    },
+    "arrayOfExistingClasses": {
+      "type": "object",
+      "existingJavaType": "com.example.ClassWithSizeAnnotation[]"
+    },
+    "multiDimensionalArrayOfExistingClasses": {
+      "type": "object",
+      "existingJavaType": "com.example.ClassWithSizeAnnotation[][]"
     }
   }
 }
