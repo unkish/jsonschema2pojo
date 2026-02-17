@@ -313,7 +313,7 @@ public class RuleFactory {
      *
      * @return a schema rule that applies the {@code @Valid} annotation to types requiring cascading validation.
      */
-    public Rule<JType, JType> getValidRule() {
+    public Rule<JFieldVar, JFieldVar> getValidRule() {
         return new ValidRule(this);
     }
 

@@ -118,8 +118,6 @@ public class TypeRule implements Rule<JClassContainer, JType> {
       type = ruleFactory.getMediaRule().apply(nodeName, node.get("media"), node, type, schema);
     }
 
-    type = ruleFactory.getValidRule().apply(nodeName, node, parent, type, schema);
-
     return type;
   }
 
