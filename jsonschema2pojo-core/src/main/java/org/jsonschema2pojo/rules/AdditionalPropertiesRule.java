@@ -115,10 +115,10 @@ public class AdditionalPropertiesRule implements Rule<JDefinedClass, JDefinedCla
             additionalPropertiesSchema.setJavaTypeIfEmpty(propertyType);
         } else {
             propertyType = jclass.owner().ref(Object.class);
-            propertyType = ruleFactory.getValidRule().apply(nodeName, node, parent, propertyType, schema);
         }
 
         JFieldVar field = addAdditionalPropertiesField(jclass, propertyType);
+        ruleFactory.getValidRule().apply(nodeName, node, parent, field, schema);
 
         addGetter(jclass, field);
 

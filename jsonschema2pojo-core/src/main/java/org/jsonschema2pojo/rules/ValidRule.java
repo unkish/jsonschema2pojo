@@ -26,7 +26,7 @@ import org.jsonschema2pojo.model.JAnnotatedClass;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.sun.codemodel.JClass;
-import com.sun.codemodel.JType;
+import com.sun.codemodel.JFieldVar;
 
 import jakarta.validation.Valid;
 
@@ -36,7 +36,7 @@ import jakarta.validation.Valid;
  * Container types (Collections, Maps) are not annotated — only their element/value types are,
  * via the recursive rule pipeline.
  */
-public class ValidRule implements Rule<JType, JType> {
+public class ValidRule implements Rule<JFieldVar, JFieldVar> {
 
     private final RuleFactory ruleFactory;
 
@@ -45,16 +45,15 @@ public class ValidRule implements Rule<JType, JType> {
     }
 
     @Override
-    public JType apply(String nodeName, JsonNode node, JsonNode parent, JType type, Schema currentSchema) {
-        if (ruleFactory.getGenerationConfig().isIncludeJsr303Annotations() && type instanceof JClass jclass) {
-            if (!isContainer(jclass) && !isScalar(jclass)) {
-                return JAnnotatedClass.of(jclass).annotated(getValidClass());
-            }
-            if (null != node && node.has("existingJavaType")) {
-                return applyToExistingJavaType(jclass);
+    public JFieldVar apply(String nodeName, JsonNode node, JsonNode parent, JFieldVar field, Schema currentSchema) {
+        if (ruleFactory.getGenerationConfig().isIncludeJsr303Annotations() && field.type() instanceof JClass jClass) {
+            if (!isContainer(jClass) && !isScalar(jClass)) {
+                field.annotate(getValidClass());
+            } else {
+                field.type(applyToExistingJavaType(jClass));
             }
         }
-        return type;
+        return field;
     }
 
     private JClass applyToExistingJavaType(JClass jClass) {
@@ -88,8 +87,9 @@ public class ValidRule implements Rule<JType, JType> {
     // a complex type (e.g. additionalProperties values) that should be validated.
     protected boolean isScalar(JClass jclass) {
         String name = jclass.erasure().fullName();
-        return (name.startsWith("java.lang.") && !name.equals("java.lang.Object"))
-            || name.startsWith("java.math.");
+        return name.startsWith("java.lang.")
+                && !name.equals("java.lang.Object")
+                || name.startsWith("java.math.");
     }
 
     private Class<? extends Annotation> getValidClass() {
