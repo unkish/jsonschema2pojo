@@ -8,7 +8,7 @@
     },
     "listOfOptionalStringExistingClassMaps": {
       "type": "object",
-      "existingJavaType": "java.util.List<java.util.Optional<java.util.Map<java.lang.String, com.example.ClassWithSizeAnnotation>>>"
+      "existingJavaType": "java.util.List<java.util.Optional<java.util.Map<java.lang.String, ClassWithSizeAnnotation>>>"
     },
     "listOfOptionalStringObjectMaps": {
       "type": "object",
