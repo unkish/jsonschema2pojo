@@ -75,6 +75,7 @@ public class JAnnotatedClass extends JClass {
 
     private final JClass basis;
     private final List<JAnnotationUse> annotations;
+    private final boolean typeUseAnnotations;
 
     /**
      * Creates a new annotated class wrapper for the given type.
@@ -85,13 +86,14 @@ public class JAnnotatedClass extends JClass {
      */
     public static JAnnotatedClass of(JClass basis) {
         if (basis == null) throw new IllegalArgumentException("basis for annotated class cannot be null");
-        return new JAnnotatedClass(basis, Collections.emptyList());
+        return new JAnnotatedClass(basis, Collections.emptyList(), true);
     }
 
-    private JAnnotatedClass(JClass basis, List<JAnnotationUse> annotations) {
+    private JAnnotatedClass(JClass basis, List<JAnnotationUse> annotations, boolean typeUseAnnotations) {
         super(basis.owner());
         this.basis = basis;
         this.annotations = new ArrayList<>(annotations);
+        this.typeUseAnnotations = typeUseAnnotations;
     }
 
     /**
@@ -129,6 +131,10 @@ public class JAnnotatedClass extends JClass {
         return annotated(owner().ref(clazz));
     }
 
+    public JAnnotatedClass asPropertyType() {
+        return new JAnnotatedClass(basis, annotations, false);
+    }
+
     @Override
     public JType elementType() {
         return basis.elementType();
@@ -143,7 +149,7 @@ public class JAnnotatedClass extends JClass {
     public JAnnotatedClass annotated(JClass clazz) {
         List<JAnnotationUse> newAnnotations = new ArrayList<>(annotations);
         newAnnotations.add(createAnnotationUse(clazz));
-        return new JAnnotatedClass(basis, newAnnotations);
+        return new JAnnotatedClass(basis, newAnnotations, typeUseAnnotations);
     }
 
     @Override
@@ -249,11 +255,16 @@ public class JAnnotatedClass extends JClass {
         String rawSimpleName = rawType.name();
         String prefix = rawFullName.substring(0, rawFullName.length() - rawSimpleName.length());
 
-        if (!isImported(f, rawType) && !prefix.isEmpty()) {
-            f.p(prefix);
+        if (typeUseAnnotations) {
+            if (!isImported(f, rawType) && !prefix.isEmpty()) {
+                f.p(prefix);
+            }
+            printAnnotations(f);
+            f.p(rawSimpleName);
+        } else {
+            printAnnotations(f);
+            f.t(rawType);
         }
-        printAnnotations(f);
-        f.p(rawSimpleName);
 
         // For narrowed types (e.g., List<String>), print type arguments
         List<JClass> typeArgs = basis.getTypeParameters();

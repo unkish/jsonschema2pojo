@@ -51,23 +51,23 @@ public class ValidRule implements Rule<JType, JType> {
                 return JAnnotatedClass.of(jclass).annotated(getValidClass());
             }
             if (null != node && node.has("existingJavaType")) {
-                return applyToExistingJavaType(jclass);
+                return decorateAndAnnotate(jclass);
             }
         }
         return type;
     }
 
-    private JClass applyToExistingJavaType(JClass jClass) {
+    private JClass decorateAndAnnotate(JClass jClass) {
         if (jClass.isReference() && isContainer(jClass.erasure())) {
             final var typeParameters = jClass.getTypeParameters();
             if ((jClass.owner().ref(Iterable.class).isAssignableFrom(jClass.erasure())
                     || jClass.owner().ref(Optional.class).isAssignableFrom(jClass.erasure()))
                     && typeParameters.size() == 1
                     && !isScalar(typeParameters.get(0))) {
-                return jClass.erasure().narrow(applyToExistingJavaType(typeParameters.get(0)));
+                return jClass.erasure().narrow(decorateAndAnnotate(typeParameters.get(0)));
             } else if (jClass.owner().ref(Map.class).isAssignableFrom(jClass.erasure())
                     && typeParameters.size() == 2 && !isScalar(typeParameters.get(1))) {
-                return jClass.erasure().narrow(typeParameters.get(0), applyToExistingJavaType(typeParameters.get(1)));
+                return jClass.erasure().narrow(typeParameters.get(0), decorateAndAnnotate(typeParameters.get(1)));
             }
         }
         if (!isContainer(jClass) && !isScalar(jClass)) {

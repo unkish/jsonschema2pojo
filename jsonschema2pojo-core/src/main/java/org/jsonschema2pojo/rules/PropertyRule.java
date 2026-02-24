@@ -31,6 +31,7 @@ import com.sun.codemodel.JMod;
 import com.sun.codemodel.JType;
 import com.sun.codemodel.JVar;
 import org.apache.commons.lang3.StringUtils;
+import org.jsonschema2pojo.model.JAnnotatedClass;
 
 /**
  * Applies the schema rules that represent a property definition.
@@ -91,7 +92,7 @@ public class PropertyRule implements Rule<JDefinedClass, JDefinedClass> {
         node = resolveRefs(node, schema);
 
         int accessModifier = isIncludeGetters || isIncludeSetters ? JMod.PRIVATE : JMod.PUBLIC;
-        JFieldVar field = jclass.field(accessModifier, propertyType, propertyName);
+        JFieldVar field = jclass.field(accessModifier, removeTypeUseContext(propertyType), propertyName);
 
         propertyAnnotations(nodeName, node, schema, field);
 
@@ -130,6 +131,13 @@ public class PropertyRule implements Rule<JDefinedClass, JDefinedClass> {
         ruleFactory.getDigitsRule().apply(nodeName, node, parent, field, schema);
 
         return jclass;
+    }
+
+    private JType removeTypeUseContext(JType propertyType) {
+        if (propertyType instanceof JAnnotatedClass aClass) {
+            return aClass.asPropertyType();
+        }
+        return propertyType;
     }
 
     private boolean hasEnumerated(Schema schema, String arrayFieldName, String nodeName) {
