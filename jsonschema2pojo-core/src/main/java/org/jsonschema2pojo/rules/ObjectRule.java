@@ -98,8 +98,7 @@ public class ObjectRule implements Rule<JPackage, JType> {
 
         jclass._extends((JClass) superType);
 
-        // storing this type for future self refs
-        schema.setJavaTypeIfEmpty(ruleFactory.getValidRule().apply(nodeName, node, parent, jclass, schema));
+        schema.setJavaTypeIfEmpty(jclass);
 
         if (node.has("title")) {
             ruleFactory.getTitleRule().apply(nodeName, node.get("title"), node, jclass, schema);
